@@ -1,0 +1,8 @@
+{
+  "jei_tag_groups.tooltip.tag": "Tag: %s",
+  "jei_tag_groups.tooltip.item": "Item: %s",
+  "jei_tag_groups.tooltip.count": "Members: %s",
+  "key.categories.jei_tag_groups": "JEI Tag Groups",
+  "key.jei_tag_groups.toggle_recipe_groups": "Expand/Collapse JEI Recipe Groups",
+  "jei_tag_groups.tooltip.toggle_recipe_groups": "Hold %s to expand/collapse recipes"
+}

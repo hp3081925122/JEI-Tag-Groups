@@ -1,0 +1,25 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.jei_tag_groups.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "jei_tag_groups.refmap.json",
+  "mixins": [],
+  "client": [
+    "client.IngredientFilterMixin",
+    "client.IngredientGridMixin",
+    "client.IngredientGridWithNavigationMixin",
+    "client.IngredientLookupStateMixin",
+    "client.SingleCategoryLookupStateMixin",
+    "client.RecipeGuiLogicMixin",
+    "client.RecipeGuiLayoutsMixin",
+    "client.RecipesGuiMixin",
+    "client.RecipeCategoryTabMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}
