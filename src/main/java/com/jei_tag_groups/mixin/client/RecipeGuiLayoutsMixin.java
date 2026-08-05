@@ -22,7 +22,7 @@ public abstract class RecipeGuiLayoutsMixin {
     @Inject(method = "draw", at = @At("HEAD"))
     // 记录 JEI 当前页的布局，避免点击旧页面的配方组。
     private void jeiTagGroups$setActiveRecipeLayouts(GuiGraphics graphics, int mouseX, int mouseY, CallbackInfoReturnable<?> callback) {
-        RecipeGroupManager.setActiveRecipeLayouts(recipeLayoutsWithButtons);
+        RecipeGroupManager.setActiveRecipeLayouts(recipeLayoutsWithButtons, mouseX, mouseY);
     }
 
     @Inject(method = "draw", at = @At("RETURN"))

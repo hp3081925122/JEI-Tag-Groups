@@ -5,6 +5,7 @@ import mezz.jei.api.recipe.IRecipeManager;
 import mezz.jei.api.recipe.category.IRecipeCategory;
 import mezz.jei.gui.recipes.RecipeGuiLogic;
 import mezz.jei.gui.recipes.layouts.IRecipeLayoutList;
+import mezz.jei.gui.recipes.lookups.ILookupState;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -26,6 +27,9 @@ public abstract class RecipeGuiLogicMixin {
     @Shadow
     private IRecipeLayoutList cachedRecipeLayoutsWithButtons;
 
+    @Shadow
+    private ILookupState state;
+
     @Unique
     private long jeiTagGroups$recipeGroupRevision = -1L;
 
@@ -43,6 +47,7 @@ public abstract class RecipeGuiLogicMixin {
             jeiTagGroups$recipeGroupRevision = revision;
             cachedRecipeLayoutsWithButtons = null;
             cachedRecipeCategory = null;
+            RecipeGroupManager.adjustRecipePage(state);
         }
     }
 

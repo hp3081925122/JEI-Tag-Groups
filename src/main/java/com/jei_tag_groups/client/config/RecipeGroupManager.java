@@ -9,8 +9,8 @@ import mezz.jei.api.recipe.category.IRecipeCategory;
 import mezz.jei.gui.recipes.RecipeLayoutWithButtons;
 import mezz.jei.gui.recipes.layouts.IRecipeLayoutList;
 import mezz.jei.gui.recipes.lookups.IFocusedRecipes;
+import mezz.jei.gui.recipes.lookups.ILookupState;
 import mezz.jei.gui.recipes.lookups.StaticFocusedRecipes;
-import com.jei_tag_groups.client.input.RecipeGroupKeyMappings;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.resources.ResourceLocation;
@@ -37,10 +37,15 @@ public final class RecipeGroupManager {
     private static final Map<IRecipeCategory<?>, Set<TagGroupConfig.RecipeGroupDefinition>> collapsibleGroupsByCategory = new IdentityHashMap<>();
     private static List<RecipeLayoutWithButtons<?>> activeLayouts = List.of();
     private static IRecipeManager recipeManager;
-    private static boolean expandKeyDown;
+    private static final Set<TagGroupConfig.RecipeGroupDefinition> expandedGroups = new LinkedHashSet<>();
     private static int carouselTicks;
     private static int carouselOffset;
     private static long revision;
+    private static IRecipeLayoutDrawable<?> hoveredLayout;
+    private static IRecipeCategory<?> pendingCategory;
+    private static Object pendingRecipe;
+    private static List<TagGroupConfig.RecipeGroupDefinition> pendingGroups = List.of();
+    private static boolean pendingExpand;
 
     private RecipeGroupManager() {
     }
@@ -52,6 +57,11 @@ public final class RecipeGroupManager {
         groupsByLayout.clear();
         collapsibleGroupsByCategory.clear();
         activeLayouts = List.of();
+        expandedGroups.clear();
+        hoveredLayout = null;
+        pendingCategory = null;
+        pendingRecipe = null;
+        pendingGroups = List.of();
         carouselTicks = 0;
         carouselOffset = 0;
         revision++;
@@ -63,6 +73,11 @@ public final class RecipeGroupManager {
             recipeManager = newRecipeManager;
             filteredFocusedRecipes.clear();
             collapsibleGroupsByCategory.clear();
+            expandedGroups.clear();
+            hoveredLayout = null;
+            pendingCategory = null;
+            pendingRecipe = null;
+            pendingGroups = List.of();
         }
     }
 
@@ -70,23 +85,9 @@ public final class RecipeGroupManager {
         return revision;
     }
 
-    // 根据当前按键状态刷新折叠缓存，让按键修改后下一帧立即重建配方页。
-    public static synchronized void updateExpandKeyState() {
-        boolean currentKeyDown = RecipeGroupKeyMappings.TOGGLE_RECIPE_GROUPS.isDown();
-        if (expandKeyDown == currentKeyDown) {
-            return;
-        }
-        expandKeyDown = currentKeyDown;
-        filteredFocusedRecipes.clear();
-        groupsByLayout.clear();
-        activeLayouts = List.of();
-        revision++;
-    }
-
     // 定时切换折叠组当前显示的代表配方，并让 JEI 重新创建当前页布局。
     public static synchronized void tickCarousel() {
-        updateExpandKeyState();
-        if (definitions.isEmpty() || expandKeyDown || collapsibleGroupsByCategory.values().stream().allMatch(Set::isEmpty)) {
+        if (definitions.isEmpty() || collapsibleGroupsByCategory.values().stream().allMatch(Set::isEmpty)) {
             return;
         }
         carouselTicks++;
@@ -99,11 +100,11 @@ public final class RecipeGroupManager {
         groupsByLayout.clear();
         activeLayouts = List.of();
         revision++;
+        LOGGER.debug("Recipe group carousel advanced: offset={}, revision={}", carouselOffset, revision);
     }
 
     // 按当前折叠状态返回供 JEI 分页使用的配方集合。
     public static synchronized <T> IFocusedRecipes<T> filterFocusedRecipes(IFocusedRecipes<T> source, IRecipeManager manager, IFocusGroup focuses) {
-        updateExpandKeyState();
         if (definitions.isEmpty()) {
             return source;
         }
@@ -183,7 +184,7 @@ public final class RecipeGroupManager {
             for (TagGroupConfig.RecipeGroupDefinition definition : groups) {
                 List<Integer> indexes = matchingIndexes.get(definition);
                 int carouselIndex = indexes.get(Math.floorMod(carouselOffset, indexes.size()));
-                if (expandKeyDown || carouselIndex == index) {
+                if (expandedGroups.contains(definition) || carouselIndex == index) {
                     include = true;
                     break;
                 }
@@ -197,6 +198,8 @@ public final class RecipeGroupManager {
         for (Integer index : includedIndexes) {
             result.add(candidates.get(index).recipe());
         }
+        LOGGER.debug("Filtered JEI recipe groups: category={}, sourceSize={}, resultSize={}, expandedGroups={}, carouselOffset={}",
+            category.getClass().getName(), recipes.size(), result.size(), expandedGroups.size(), carouselOffset);
         return new StaticFocusedRecipes<>(category, List.copyOf(result));
     }
 
@@ -252,11 +255,133 @@ public final class RecipeGroupManager {
                 groupsByLayout.put(layout, List.copyOf(matchingGroups));
             }
         }
+        LOGGER.debug("Registered JEI recipe group layouts: layoutCount={}, groupedLayoutCount={}", layouts.size(), groupsByLayout.size());
     }
 
-    // 记录当前页面实际绘制的布局，点击和边框都只处理这一页。
-    public static synchronized void setActiveRecipeLayouts(List<RecipeLayoutWithButtons<?>> layouts) {
+    // 记录当前页面实际绘制的布局和鼠标位置，按键只切换鼠标悬停的配方组。
+    public static synchronized void setActiveRecipeLayouts(List<RecipeLayoutWithButtons<?>> layouts, int mouseX, int mouseY) {
         activeLayouts = List.copyOf(layouts);
+        IRecipeLayoutDrawable<?> previousHoveredLayout = hoveredLayout;
+        hoveredLayout = null;
+        for (RecipeLayoutWithButtons<?> layoutWithButtons : activeLayouts) {
+            IRecipeLayoutDrawable<?> layout = layoutWithButtons.recipeLayout();
+            if (layout.isMouseOver(mouseX, mouseY)) {
+                hoveredLayout = layout;
+                break;
+            }
+        }
+        if (previousHoveredLayout != hoveredLayout) {
+            LOGGER.debug("Recipe group hover changed: hovered={}, mouse=({}, {})",
+                hoveredLayout == null ? "none" : groupsByLayout.getOrDefault(hoveredLayout, List.of()), mouseX, mouseY);
+        }
+    }
+
+    // 切换鼠标悬停配方对应的折叠组，并保持 JEI 当前页码不变。
+    public static synchronized void toggleHoveredRecipeGroup() {
+        if (hoveredLayout == null) {
+            LOGGER.debug("Recipe group toggle ignored: no hovered recipe layout");
+            return;
+        }
+
+        List<TagGroupConfig.RecipeGroupDefinition> matchingGroups = groupsByLayout.get(hoveredLayout);
+        if (matchingGroups == null || matchingGroups.isEmpty()) {
+            LOGGER.debug("Recipe group toggle ignored: hovered layout has no collapsible group");
+            return;
+        }
+
+        boolean expand = matchingGroups.stream().anyMatch(definition -> !expandedGroups.contains(definition));
+        if (expand) {
+            expandedGroups.addAll(matchingGroups);
+        } else {
+            expandedGroups.removeAll(matchingGroups);
+        }
+        pendingCategory = hoveredLayout.getRecipeCategory();
+        pendingRecipe = hoveredLayout.getRecipe();
+        pendingGroups = List.copyOf(matchingGroups);
+        pendingExpand = expand;
+        filteredFocusedRecipes.clear();
+        groupsByLayout.clear();
+        activeLayouts = List.of();
+        hoveredLayout = null;
+        carouselTicks = 0;
+        revision++;
+        LOGGER.debug("Recipe group toggle applied: expand={}, groupCount={}, revision={}", expand, matchingGroups.size(), revision);
+    }
+
+    // 在 JEI 使用新配方列表创建布局前，将页码调整到展开配方或折叠代表配方所在页。
+    public static synchronized void adjustRecipePage(ILookupState state) {
+        if (pendingCategory == null) {
+            return;
+        }
+
+        IFocusedRecipes<?> focusedRecipes = state.getFocusedRecipes();
+        if (focusedRecipes.getRecipeCategory() != pendingCategory) {
+            LOGGER.debug("Recipe page adjustment skipped: category changed before refresh");
+            pendingCategory = null;
+            pendingRecipe = null;
+            pendingGroups = List.of();
+            return;
+        }
+
+        List<?> recipes = focusedRecipes.getRecipes();
+        int targetIndex = -1;
+        if (pendingExpand) {
+            for (int index = 0; index < recipes.size(); index++) {
+                Object recipe = recipes.get(index);
+                if (recipe == pendingRecipe || (recipe != null && recipe.equals(pendingRecipe))) {
+                    targetIndex = index;
+                    break;
+                }
+            }
+        } else {
+            IRecipeManager activeRecipeManager = recipeManager;
+            IRecipeCategory<?> category = focusedRecipes.getRecipeCategory();
+            for (int index = 0; index < recipes.size() && targetIndex < 0; index++) {
+                Object recipe = recipes.get(index);
+                Optional<IRecipeLayoutDrawable<?>> layout = Optional.empty();
+                if (activeRecipeManager != null) {
+                    try {
+                        @SuppressWarnings({"rawtypes", "unchecked"})
+                        Optional<IRecipeLayoutDrawable<?>> createdLayout = (Optional) activeRecipeManager.createRecipeLayoutDrawable(
+                            (IRecipeCategory) category,
+                            recipe,
+                            state.getFocuses()
+                        );
+                        layout = createdLayout;
+                    } catch (RuntimeException exception) {
+                        LOGGER.debug("Failed to create layout while locating collapsed recipe", exception);
+                    }
+                }
+                for (TagGroupConfig.RecipeGroupDefinition definition : pendingGroups) {
+                    try {
+                        @SuppressWarnings({"rawtypes", "unchecked"})
+                        boolean matches = matches(definition, (IRecipeCategory) category, recipe, (Optional) layout);
+                        if (matches) {
+                            targetIndex = index;
+                            break;
+                        }
+                    } catch (RuntimeException exception) {
+                        LOGGER.debug("Failed to match collapsed recipe group", exception);
+                    }
+                }
+            }
+        }
+
+        int recipesPerPage = Math.max(1, state.getRecipesPerPage());
+        if (targetIndex < 0) {
+            targetIndex = recipes.isEmpty() ? 0 : Math.min(state.getRecipeIndex(), recipes.size() - 1);
+        }
+        int targetPage = targetIndex / recipesPerPage;
+        int previousPage = state.getRecipeIndex() / recipesPerPage;
+        state.goToFirstPage();
+        for (int page = 0; page < targetPage; page++) {
+            state.nextPage();
+        }
+        LOGGER.debug("Adjusted JEI recipe page: expand={}, recipeCount={}, recipesPerPage={}, previousPage={}, targetPage={}, targetIndex={}",
+            pendingExpand, recipes.size(), recipesPerPage, previousPage, targetPage, targetIndex);
+        pendingCategory = null;
+        pendingRecipe = null;
+        pendingGroups = List.of();
     }
 
     // 判断指定配方类别是否存在可以被按键展开的折叠组。
@@ -298,8 +423,12 @@ public final class RecipeGroupManager {
         IRecipeCategory<T> category = layout.getRecipeCategory();
         T recipe = layout.getRecipe();
         Optional<IRecipeLayoutDrawable<T>> currentLayout = Optional.of(layout);
+        Set<TagGroupConfig.RecipeGroupDefinition> collapsibleGroups = collapsibleGroupsByCategory.get(category);
+        if (collapsibleGroups == null || collapsibleGroups.isEmpty()) {
+            return;
+        }
         for (TagGroupConfig.RecipeGroupDefinition definition : definitions) {
-            if (matches(definition, category, recipe, currentLayout)) {
+            if (collapsibleGroups.contains(definition) && matches(definition, category, recipe, currentLayout)) {
                 matchingGroups.add(definition);
             }
         }

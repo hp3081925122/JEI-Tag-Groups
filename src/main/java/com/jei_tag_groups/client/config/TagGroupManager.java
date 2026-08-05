@@ -27,10 +27,12 @@ public final class TagGroupManager {
     private static volatile List<TagGroupConfig.TagGroupDefinition> definitions = List.of();
     private static final Set<TagGroupConfig.GroupKey> expandedGroups = new java.util.HashSet<>();
     private static final Map<IElement<?>, List<ExpandedGroup>> expandedMemberGroups = new IdentityHashMap<>();
+    private static final Map<List<IElement<?>>, Integer> preferredIndexes = new IdentityHashMap<>();
     private static final AtomicLong REVISION = new AtomicLong();
     private static List<IElement<?>> cachedSource;
     private static long cachedRevision = -1L;
     private static List<IElement<?>> cachedElements = List.of();
+    private static TagGroupConfig.GroupKey pendingGroupKey;
 
     private TagGroupManager() {
     }
@@ -40,6 +42,8 @@ public final class TagGroupManager {
         definitions = List.copyOf(newDefinitions);
         expandedGroups.clear();
         expandedMemberGroups.clear();
+        preferredIndexes.clear();
+        pendingGroupKey = null;
         cachedSource = null;
         cachedElements = List.of();
         cachedRevision = -1L;
@@ -47,14 +51,18 @@ public final class TagGroupManager {
     }
 
     public static synchronized void toggle(TagGroupConfig.GroupKey groupKey) {
-        if (!expandedGroups.add(groupKey)) {
+        boolean expanded = expandedGroups.add(groupKey);
+        if (!expanded) {
             expandedGroups.remove(groupKey);
         }
+        pendingGroupKey = groupKey;
+        preferredIndexes.clear();
         expandedMemberGroups.clear();
         cachedSource = null;
         cachedElements = List.of();
         cachedRevision = -1L;
         REVISION.incrementAndGet();
+        LOGGER.debug("Item group toggled: group={}, expanded={}, revision={}", groupKey, expanded, REVISION.get());
     }
 
     public static long revision() {
@@ -94,6 +102,7 @@ public final class TagGroupManager {
             }
         }
         if (matchingGroups.isEmpty()) {
+            pendingGroupKey = null;
             cachedSource = source;
             cachedRevision = revision;
             cachedElements = source;
@@ -111,6 +120,7 @@ public final class TagGroupManager {
         }
 
         Map<Integer, List<MatchingGroup>> groupsByFirstIndex = new java.util.HashMap<>();
+        Map<TagGroupConfig.GroupKey, IElement<?>> groupElements = new java.util.HashMap<>();
         Map<IElement<?>, List<MatchingGroup>> groupsByMember = new IdentityHashMap<>();
         for (MatchingGroup group : matchingGroups) {
             groupsByFirstIndex.computeIfAbsent(group.members().get(0).index(), ignored -> new ArrayList<>()).add(group);
@@ -123,7 +133,9 @@ public final class TagGroupManager {
         List<IElement<?>> result = new ArrayList<>(source.size());
         for (int index = 0; index < source.size(); index++) {
             for (MatchingGroup group : groupsByFirstIndex.getOrDefault(index, List.of())) {
-                result.add(createElement(group, ingredientManager));
+                IElement<?> groupElement = createElement(group, ingredientManager);
+                groupElements.put(group.definition().groupKey(), groupElement);
+                result.add(groupElement);
             }
             IElement<?> element = source.get(index);
             for (MatchingGroup group : groupsByFirstIndex.getOrDefault(index, List.of())) {
@@ -136,10 +148,24 @@ public final class TagGroupManager {
             }
         }
 
+        List<IElement<?>> resultElements = List.copyOf(result);
+        if (pendingGroupKey != null) {
+            IElement<?> groupElement = groupElements.get(pendingGroupKey);
+            if (groupElement != null) {
+                preferredIndexes.put(resultElements, result.indexOf(groupElement));
+            }
+            pendingGroupKey = null;
+        }
+
         cachedSource = source;
         cachedRevision = revision;
-        cachedElements = List.copyOf(result);
+        cachedElements = resultElements;
         return cachedElements;
+    }
+
+    // 返回本次展开或折叠后目标物品组入口在新列表中的位置。
+    public static synchronized Integer preferredItemIndex(List<IElement<?>> elements) {
+        return preferredIndexes.get(elements);
     }
 
     public static synchronized void drawExpandedGroupBorders(GuiGraphics graphics, Stream<IngredientListSlot> slots) {

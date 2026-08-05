@@ -4,5 +4,5 @@
   "jei_tag_groups.tooltip.count": "成員數量：%s",
   "key.categories.jei_tag_groups": "JEI Tag Groups",
   "key.jei_tag_groups.toggle_recipe_groups": "展開/摺疊 JEI 配方組",
-  "jei_tag_groups.tooltip.toggle_recipe_groups": "按住 %s 展開/摺疊配方"
+  "jei_tag_groups.tooltip.toggle_recipe_groups": "懸停摺疊配方後按 %s 展開/摺疊"
 }
