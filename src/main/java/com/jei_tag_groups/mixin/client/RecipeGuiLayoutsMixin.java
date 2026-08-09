@@ -3,7 +3,8 @@ package com.jei_tag_groups.mixin.client;
 import com.jei_tag_groups.client.config.RecipeGroupManager;
 import mezz.jei.gui.recipes.RecipeGuiLayouts;
 import mezz.jei.gui.recipes.RecipeLayoutWithButtons;
-import net.minecraft.client.gui.GuiGraphics;
+import mezz.jei.gui.recipes.IRecipeLayoutWithButtons;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -17,17 +18,17 @@ import java.util.List;
 public abstract class RecipeGuiLayoutsMixin {
     @Shadow
     @Final
-    private List<RecipeLayoutWithButtons<?>> recipeLayoutsWithButtons;
+    private List<IRecipeLayoutWithButtons<?>> recipeLayoutsWithButtons;
 
     @Inject(method = "draw", at = @At("HEAD"))
     // 记录 JEI 当前页的布局，避免点击旧页面的配方组。
-    private void jeiTagGroups$setActiveRecipeLayouts(GuiGraphics graphics, int mouseX, int mouseY, CallbackInfoReturnable<?> callback) {
+    private void jeiTagGroups$setActiveRecipeLayouts(GuiGraphicsExtractor graphics, int mouseX, int mouseY, CallbackInfoReturnable<?> callback) {
         RecipeGroupManager.setActiveRecipeLayouts(recipeLayoutsWithButtons, mouseX, mouseY);
     }
 
     @Inject(method = "draw", at = @At("RETURN"))
     // 在原生配方绘制完成后追加折叠组边框。
-    private void jeiTagGroups$drawRecipeGroupBorders(GuiGraphics graphics, int mouseX, int mouseY, CallbackInfoReturnable<?> callback) {
+    private void jeiTagGroups$drawRecipeGroupBorders(GuiGraphicsExtractor graphics, int mouseX, int mouseY, CallbackInfoReturnable<?> callback) {
         RecipeGroupManager.drawRecipeGroupBorders(graphics);
     }
 }

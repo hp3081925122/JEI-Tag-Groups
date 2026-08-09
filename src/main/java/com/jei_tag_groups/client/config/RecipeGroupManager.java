@@ -6,17 +6,16 @@ import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.IRecipeManager;
 import mezz.jei.api.recipe.RecipeIngredientRole;
 import mezz.jei.api.recipe.category.IRecipeCategory;
-import mezz.jei.gui.recipes.RecipeLayoutWithButtons;
-import mezz.jei.gui.recipes.layouts.IRecipeLayoutList;
+import mezz.jei.gui.recipes.IRecipeLayoutWithButtons;
 import mezz.jei.gui.recipes.lookups.IFocusedRecipes;
 import mezz.jei.gui.recipes.lookups.ILookupState;
 import mezz.jei.gui.recipes.lookups.StaticFocusedRecipes;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.Rect2i;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,7 +34,7 @@ public final class RecipeGroupManager {
     private static final Map<IFocusedRecipes<?>, IFocusedRecipes<?>> filteredFocusedRecipes = new IdentityHashMap<>();
     private static final Map<IRecipeLayoutDrawable<?>, List<TagGroupConfig.RecipeGroupDefinition>> groupsByLayout = new IdentityHashMap<>();
     private static final Map<IRecipeCategory<?>, Set<TagGroupConfig.RecipeGroupDefinition>> collapsibleGroupsByCategory = new IdentityHashMap<>();
-    private static List<RecipeLayoutWithButtons<?>> activeLayouts = List.of();
+    private static List<IRecipeLayoutWithButtons<?>> activeLayouts = List.of();
     private static IRecipeManager recipeManager;
     private static final Set<TagGroupConfig.RecipeGroupDefinition> expandedGroups = new LinkedHashSet<>();
     private static int carouselTicks;
@@ -205,9 +204,9 @@ public final class RecipeGroupManager {
 
     // 判断配方 ID、ID 包含文本、产出物品和输入物品等配置条件是否全部满足。
     private static <T> boolean matches(TagGroupConfig.RecipeGroupDefinition definition, IRecipeCategory<T> category, T recipe, Optional<IRecipeLayoutDrawable<T>> layout) {
-        ResourceLocation recipeId;
+        Identifier recipeId;
         try {
-            recipeId = category.getRegistryName(recipe);
+            recipeId = category.getIdentifier(recipe);
         } catch (RuntimeException exception) {
             recipeId = null;
         }
@@ -225,11 +224,11 @@ public final class RecipeGroupManager {
     }
 
     // 检查指定角色的任意 JEI 物品槽是否包含目标物品。
-    private static boolean containsItem(Optional<? extends IRecipeLayoutDrawable<?>> layout, RecipeIngredientRole role, ResourceLocation itemId) {
+    private static boolean containsItem(Optional<? extends IRecipeLayoutDrawable<?>> layout, RecipeIngredientRole role, Identifier itemId) {
         if (layout.isEmpty()) {
             return false;
         }
-        Item item = ForgeRegistries.ITEMS.getValue(itemId);
+        Item item = BuiltInRegistries.ITEM.getValue(itemId);
         if (item == null) {
             return false;
         }
@@ -240,15 +239,14 @@ public final class RecipeGroupManager {
     }
 
     // 在 JEI 完成布局创建后记录当前可见配方与其匹配组的对应关系。
-    public static synchronized void registerRecipeLayouts(IRecipeLayoutList layoutList) {
+    public static synchronized void registerRecipeLayouts(List<IRecipeLayoutWithButtons<?>> layouts) {
         groupsByLayout.clear();
         if (definitions.isEmpty()) {
             return;
         }
 
-        List<RecipeLayoutWithButtons<?>> layouts = layoutList.subList(0, layoutList.size());
-        for (RecipeLayoutWithButtons<?> layoutWithButtons : layouts) {
-            IRecipeLayoutDrawable<?> layout = layoutWithButtons.recipeLayout();
+        for (IRecipeLayoutWithButtons<?> layoutWithButtons : layouts) {
+            IRecipeLayoutDrawable<?> layout = layoutWithButtons.getRecipeLayout();
             List<TagGroupConfig.RecipeGroupDefinition> matchingGroups = new ArrayList<>();
             addMatchingGroups(layout, matchingGroups);
             if (!matchingGroups.isEmpty()) {
@@ -259,12 +257,12 @@ public final class RecipeGroupManager {
     }
 
     // 记录当前页面实际绘制的布局和鼠标位置，按键只切换鼠标悬停的配方组。
-    public static synchronized void setActiveRecipeLayouts(List<RecipeLayoutWithButtons<?>> layouts, int mouseX, int mouseY) {
+    public static synchronized void setActiveRecipeLayouts(List<IRecipeLayoutWithButtons<?>> layouts, int mouseX, int mouseY) {
         activeLayouts = List.copyOf(layouts);
         IRecipeLayoutDrawable<?> previousHoveredLayout = hoveredLayout;
         hoveredLayout = null;
-        for (RecipeLayoutWithButtons<?> layoutWithButtons : activeLayouts) {
-            IRecipeLayoutDrawable<?> layout = layoutWithButtons.recipeLayout();
+        for (IRecipeLayoutWithButtons<?> layoutWithButtons : activeLayouts) {
+            IRecipeLayoutDrawable<?> layout = layoutWithButtons.getRecipeLayout();
             if (layout.isMouseOver(mouseX, mouseY)) {
                 hoveredLayout = layout;
                 break;
@@ -274,6 +272,27 @@ public final class RecipeGroupManager {
             LOGGER.debug("Recipe group hover changed: hovered={}, mouse=({}, {})",
                 hoveredLayout == null ? "none" : groupsByLayout.getOrDefault(hoveredLayout, List.of()), mouseX, mouseY);
         }
+    }
+
+    // 根据点击坐标确认当前配方卡片确实属于折叠组后执行左键切换。
+    public static synchronized boolean toggleRecipeGroupAt(double mouseX, double mouseY, int button) {
+        if (button != 0) {
+            return false;
+        }
+        IRecipeLayoutDrawable<?> clickedLayout = null;
+        for (IRecipeLayoutWithButtons<?> layoutWithButtons : activeLayouts) {
+            IRecipeLayoutDrawable<?> layout = layoutWithButtons.getRecipeLayout();
+            if (layout.isMouseOver(mouseX, mouseY)) {
+                clickedLayout = layout;
+                break;
+            }
+        }
+        if (clickedLayout == null || groupsByLayout.getOrDefault(clickedLayout, List.of()).isEmpty()) {
+            return false;
+        }
+        hoveredLayout = clickedLayout;
+        toggleHoveredRecipeGroup();
+        return true;
     }
 
     // 切换鼠标悬停配方对应的折叠组，并保持 JEI 当前页码不变。
@@ -309,9 +328,9 @@ public final class RecipeGroupManager {
     }
 
     // 在 JEI 使用新配方列表创建布局前，将页码调整到展开配方或折叠代表配方所在页。
-    public static synchronized void adjustRecipePage(ILookupState state) {
+    public static synchronized boolean adjustRecipePage(ILookupState state) {
         if (pendingCategory == null) {
-            return;
+            return false;
         }
 
         IFocusedRecipes<?> focusedRecipes = state.getFocusedRecipes();
@@ -320,7 +339,7 @@ public final class RecipeGroupManager {
             pendingCategory = null;
             pendingRecipe = null;
             pendingGroups = List.of();
-            return;
+            return false;
         }
 
         List<?> recipes = focusedRecipes.getRecipes();
@@ -382,6 +401,21 @@ public final class RecipeGroupManager {
         pendingCategory = null;
         pendingRecipe = null;
         pendingGroups = List.of();
+        return true;
+    }
+
+    // 轮播或配置刷新后恢复原页，并在新配方数量减少时限制到最后一页。
+    public static synchronized void restoreRecipePage(ILookupState state, int requestedPage) {
+        int recipesPerPage = Math.max(1, state.getRecipesPerPage());
+        int recipeCount = state.getFocusedRecipes().getRecipes().size();
+        int pageCount = recipeCount <= 1 ? 1 : (recipeCount + recipesPerPage - 1) / recipesPerPage;
+        int targetPage = Math.max(0, Math.min(requestedPage, pageCount - 1));
+        state.goToFirstPage();
+        for (int page = 0; page < targetPage; page++) {
+            state.nextPage();
+        }
+        LOGGER.debug("Restored JEI recipe page after refresh: requestedPage={}, targetPage={}, recipeCount={}, recipesPerPage={}",
+            requestedPage, targetPage, recipeCount, recipesPerPage);
     }
 
     // 判断指定配方类别是否存在可以被按键展开的折叠组。
@@ -391,9 +425,9 @@ public final class RecipeGroupManager {
     }
 
     // 为当前页的折叠配方绘制一圈独立边框，保留 JEI 原生卡片边框。
-    public static synchronized void drawRecipeGroupBorders(GuiGraphics graphics) {
-        for (RecipeLayoutWithButtons<?> layoutWithButtons : activeLayouts) {
-            IRecipeLayoutDrawable<?> layout = layoutWithButtons.recipeLayout();
+    public static synchronized void drawRecipeGroupBorders(GuiGraphicsExtractor graphics) {
+        for (IRecipeLayoutWithButtons<?> layoutWithButtons : activeLayouts) {
+            IRecipeLayoutDrawable<?> layout = layoutWithButtons.getRecipeLayout();
             List<TagGroupConfig.RecipeGroupDefinition> matchingGroups = groupsByLayout.get(layout);
             if (matchingGroups == null) {
                 continue;

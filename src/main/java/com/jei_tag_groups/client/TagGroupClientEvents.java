@@ -5,15 +5,17 @@ import com.jei_tag_groups.client.config.TagGroupConfig;
 import com.jei_tag_groups.client.config.TagGroupManager;
 import com.jei_tag_groups.client.config.RecipeGroupManager;
 import com.jei_tag_groups.client.input.RecipeGroupKeyMappings;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
-import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.minecraft.resources.Identifier;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.neoforge.client.event.AddClientReloadListenersEvent;
+import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
 
-@Mod.EventBusSubscriber(modid = Jei_tag_groups.MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+@EventBusSubscriber(modid = Jei_tag_groups.MODID, value = Dist.CLIENT)
 public final class TagGroupClientEvents {
     private TagGroupClientEvents() {
     }
@@ -36,8 +38,8 @@ public final class TagGroupClientEvents {
 
     @SubscribeEvent
     // F3+T 触发资源重载时重新读取外部配置文件。
-    public static void registerReloadListener(RegisterClientReloadListenersEvent event) {
-        event.registerReloadListener(new SimplePreparableReloadListener<TagGroupConfig.Configuration>() {
+    public static void registerReloadListener(AddClientReloadListenersEvent event) {
+        event.addListener(Identifier.parse("jei_tag_groups:tag_groups"), new SimplePreparableReloadListener<TagGroupConfig.Configuration>() {
             @Override
             protected TagGroupConfig.Configuration prepare(net.minecraft.server.packs.resources.ResourceManager resourceManager, net.minecraft.util.profiling.ProfilerFiller profiler) {
                 return TagGroupConfig.load();

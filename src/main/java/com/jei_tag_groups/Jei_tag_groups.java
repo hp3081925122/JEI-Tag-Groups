@@ -1,6 +1,6 @@
 package com.jei_tag_groups;
 
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.fml.common.Mod;
 
 @Mod(Jei_tag_groups.MODID)
 public final class Jei_tag_groups {

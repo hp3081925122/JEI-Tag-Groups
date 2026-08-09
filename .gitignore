@@ -19,3 +19,8 @@ hs_err_pid*
 
 # Common working directory
 run
+
+# 本地 IDE 和编译生成文件
+.vscode/
+.eclipse/
+bin/

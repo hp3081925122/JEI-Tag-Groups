@@ -5,13 +5,13 @@ import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.ingredients.ITypedIngredient;
 import mezz.jei.api.runtime.IIngredientManager;
 import mezz.jei.common.util.ImmutableRect2i;
-import mezz.jei.gui.overlay.IngredientListSlot;
+import mezz.jei.gui.overlay.ingredients.IngredientListSlot;
 import mezz.jei.gui.overlay.elements.IElement;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
@@ -94,9 +94,9 @@ public final class TagGroupManager {
 
         List<MatchingGroup> matchingGroups = new ArrayList<>();
         for (TagGroupConfig.TagGroupDefinition definition : definitions) {
-            List<SourceItem> members = sourceItems.stream().filter(sourceItem -> definition.tagKey() != null
-                ? sourceItem.stack().is(definition.tagKey())
-                : sourceItem.stack().is(definition.item())).toList();
+            List<SourceItem> members = sourceItems.stream()
+                .filter(sourceItem -> matchesItem(definition, sourceItem.stack()))
+                .toList();
             if (!members.isEmpty()) {
                 matchingGroups.add(new MatchingGroup(definition, members, expandedGroups.contains(definition.groupKey())));
             }
@@ -168,20 +168,21 @@ public final class TagGroupManager {
         return preferredIndexes.get(elements);
     }
 
-    public static synchronized void drawExpandedGroupBorders(GuiGraphics graphics, Stream<IngredientListSlot> slots) {
+    public static synchronized void drawExpandedGroupBorders(GuiGraphicsExtractor graphics, Stream<IngredientListSlot> slots) {
         if (expandedMemberGroups.isEmpty()) {
             return;
         }
 
         Map<ExpandedGroup, List<IngredientListSlot>> slotsByGroup = new java.util.LinkedHashMap<>();
         slots.forEach(slot -> {
-            IElement<?> element = slot.getElement();
-            List<ExpandedGroup> groups = expandedMemberGroups.get(element);
-            if (groups != null) {
-                for (ExpandedGroup group : groups) {
-                    slotsByGroup.computeIfAbsent(group, ignored -> new ArrayList<>()).add(slot);
+            slot.getOptionalElement().ifPresent(element -> {
+                List<ExpandedGroup> groups = expandedMemberGroups.get(element);
+                if (groups != null) {
+                    for (ExpandedGroup group : groups) {
+                        slotsByGroup.computeIfAbsent(group, ignored -> new ArrayList<>()).add(slot);
+                    }
                 }
-            }
+            });
         });
 
         // 只绘制展开成员集合的外轮廓，相邻成员之间不重复绘制内部线条。
@@ -217,7 +218,7 @@ public final class TagGroupManager {
     }
 
     private static TagGroupElement createElement(MatchingGroup group, IIngredientManager ingredientManager) {
-        Item iconItem = ForgeRegistries.ITEMS.getValue(group.definition().iconId());
+        Item iconItem = BuiltInRegistries.ITEM.getValue(group.definition().iconId());
         ItemStack iconStack = iconItem == null
             ? ItemStack.EMPTY
             : iconItem.getDefaultInstance();
@@ -228,7 +229,18 @@ public final class TagGroupManager {
 
         ITypedIngredient<ItemStack> typedIcon = ingredientManager.createTypedIngredient(VanillaTypes.ITEM_STACK, iconStack).orElseThrow();
         List<ItemStack> memberStacks = group.members().stream().map(member -> member.stack().copy()).toList();
-        return new TagGroupElement(typedIcon, group.definition().groupKey(), group.definition().borderColor(), memberStacks);
+        return new TagGroupElement(typedIcon, group.definition(), memberStacks);
+    }
+
+    // 按标签、物品 ID 或当前语言下的物品显示名称匹配成员。
+    private static boolean matchesItem(TagGroupConfig.TagGroupDefinition definition, ItemStack stack) {
+        if (definition.tagKey() != null) {
+            return stack.is(definition.tagKey());
+        }
+        if (definition.itemNameContains() != null) {
+            return stack.getHoverName().getString().contains(definition.itemNameContains());
+        }
+        return definition.items().contains(stack.getItem());
     }
 
     private record SourceItem(int index, IElement<?> element, ItemStack stack) {

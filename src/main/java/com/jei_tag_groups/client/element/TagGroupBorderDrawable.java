@@ -1,7 +1,7 @@
 package com.jei_tag_groups.client.element;
 
 import mezz.jei.api.gui.drawable.IDrawable;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 public final class TagGroupBorderDrawable implements IDrawable {
     private static final int SIZE = 18;
@@ -22,7 +22,7 @@ public final class TagGroupBorderDrawable implements IDrawable {
     }
 
     @Override
-    public void draw(GuiGraphics graphics, int x, int y) {
+    public void draw(GuiGraphicsExtractor graphics, int x, int y) {
         // JEI 传入的是 16×16 内容区域坐标，向左上补回 1 像素后与 18×18 槽位边界对齐。
         int borderX = x - 1;
         int borderY = y - 1;
