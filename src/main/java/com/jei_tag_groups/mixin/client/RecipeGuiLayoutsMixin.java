@@ -1,8 +1,8 @@
 package com.jei_tag_groups.mixin.client;
 
 import com.jei_tag_groups.client.config.RecipeGroupManager;
+import mezz.jei.gui.recipes.IRecipeLayoutWithButtons;
 import mezz.jei.gui.recipes.RecipeGuiLayouts;
-import mezz.jei.gui.recipes.RecipeLayoutWithButtons;
 import net.minecraft.client.gui.GuiGraphics;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -17,7 +17,7 @@ import java.util.List;
 public abstract class RecipeGuiLayoutsMixin {
     @Shadow
     @Final
-    private List<RecipeLayoutWithButtons<?>> recipeLayoutsWithButtons;
+    private List<IRecipeLayoutWithButtons<?>> recipeLayoutsWithButtons;
 
     @Inject(method = "draw", at = @At("HEAD"))
     // 记录 JEI 当前页的布局，避免点击旧页面的配方组。

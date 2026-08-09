@@ -1,8 +1,8 @@
 package com.jei_tag_groups.mixin.client;
 
 import com.jei_tag_groups.client.config.TagGroupManager;
-import mezz.jei.gui.overlay.IngredientGrid;
-import mezz.jei.gui.overlay.IngredientListRenderer;
+import mezz.jei.gui.overlay.ingredients.IngredientGrid;
+import mezz.jei.gui.overlay.ingredients.IngredientListRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import org.spongepowered.asm.mixin.Final;
@@ -18,7 +18,7 @@ public abstract class IngredientGridMixin {
     @Final
     private IngredientListRenderer ingredientListRenderer;
 
-    @Inject(method = "draw", at = @At(value = "INVOKE", target = "Lmezz/jei/gui/overlay/IngredientListRenderer;render(Lnet/minecraft/client/gui/GuiGraphics;)V", shift = At.Shift.AFTER))
+    @Inject(method = "drawContents", at = @At(value = "INVOKE", target = "Lmezz/jei/gui/overlay/ingredients/IngredientListRenderer;render(Lnet/minecraft/client/gui/GuiGraphics;)V", shift = At.Shift.AFTER))
     // 在物品绘制完成后追加展开组的连续外轮廓。
     private void jeiTagGroups$drawExpandedBorders(Minecraft minecraft, GuiGraphics graphics, int mouseX, int mouseY, CallbackInfo callback) {
         TagGroupManager.drawExpandedGroupBorders(graphics, ingredientListRenderer.getSlots());

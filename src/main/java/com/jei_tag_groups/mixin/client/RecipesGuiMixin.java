@@ -11,6 +11,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.slf4j.Logger;
 
 @Mixin(value = RecipesGui.class, remap = false)
@@ -37,6 +38,14 @@ public abstract class RecipesGuiMixin {
             jeiTagGroups$recipeGroupRevision = revision;
             updateLayout();
             jeiTagGroups$logger.debug("Refreshing JEI recipe layouts without resetting page: revision={}", revision);
+        }
+    }
+
+    @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
+    // 折叠配方入口统一支持左键展开或折叠，并避免 JEI 同时处理同一次点击。
+    private void jeiTagGroups$toggleRecipeGroup(double mouseX, double mouseY, int button, CallbackInfoReturnable<Boolean> callback) {
+        if (RecipeGroupManager.toggleRecipeGroupAt(mouseX, mouseY, button)) {
+            callback.setReturnValue(true);
         }
     }
 }

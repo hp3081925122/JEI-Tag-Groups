@@ -1,8 +1,18 @@
 {
   "jei_tag_groups.tooltip.tag": "Tag: %s",
-  "jei_tag_groups.tooltip.item": "Item: %s",
+  "jei_tag_groups.tooltip.item": "Item(s): %s",
+  "jei_tag_groups.tooltip.item_name": "Item name contains: %s",
+  "jei_tag_groups.group.enchanted_book.name": "Enchanted Books",
+  "jei_tag_groups.group.enchanted_book.tooltip": "Collapsed enchanted book entries",
+  "jei_tag_groups.group.potion.name": "Potions",
+  "jei_tag_groups.group.potion.tooltip": "Collapsed potion entries",
+  "jei_tag_groups.group.splash_potion.name": "Splash Potions",
+  "jei_tag_groups.group.splash_potion.tooltip": "Collapsed splash potion entries",
+  "jei_tag_groups.group.lingering_potion.name": "Lingering Potions",
+  "jei_tag_groups.group.lingering_potion.tooltip": "Collapsed lingering potion entries",
+  "jei_tag_groups.tooltip.toggle_item_groups": "Left-click to expand/collapse the item list",
   "jei_tag_groups.tooltip.count": "Members: %s",
   "key.categories.jei_tag_groups": "JEI Tag Groups",
   "key.jei_tag_groups.toggle_recipe_groups": "Expand/Collapse JEI Recipe Groups",
-  "jei_tag_groups.tooltip.toggle_recipe_groups": "Hover a collapsed recipe and press %s to expand/collapse"
+  "jei_tag_groups.tooltip.toggle_recipe_groups": "Left-click a collapsed recipe or press %s to expand/collapse"
 }

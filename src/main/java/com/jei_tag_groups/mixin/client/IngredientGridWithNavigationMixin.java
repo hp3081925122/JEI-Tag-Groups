@@ -1,9 +1,8 @@
 package com.jei_tag_groups.mixin.client;
 
 import com.jei_tag_groups.client.config.TagGroupManager;
-import mezz.jei.gui.overlay.IngredientGridWithNavigation;
-import mezz.jei.gui.overlay.IngredientGrid;
-import mezz.jei.gui.overlay.IIngredientGridSource;
+import mezz.jei.gui.overlay.ingredients.IngredientGridWithNavigation;
+import mezz.jei.gui.overlay.ingredients.IIngredientGridSource;
 import mezz.jei.gui.overlay.elements.IElement;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -24,11 +23,10 @@ public abstract class IngredientGridWithNavigationMixin {
     private IIngredientGridSource ingredientSource;
 
     @Shadow
-    @Final
-    private IngredientGrid ingredientGrid;
+    public abstract void updateLayout(boolean keepPage);
 
     @Shadow
-    private int firstItemIndex;
+    public abstract void updateLayoutKeepingPageAnchorVisible(IElement<?> element);
 
     @Unique
     private long jeiTagGroups$lastRevision = -1L;
@@ -41,10 +39,11 @@ public abstract class IngredientGridWithNavigationMixin {
             jeiTagGroups$lastRevision = revision;
             List<IElement<?>> elements = ingredientSource.getElements();
             Integer preferredIndex = TagGroupManager.preferredItemIndex(elements);
-            if (preferredIndex != null && ingredientGrid.size() > 0) {
-                firstItemIndex = preferredIndex / ingredientGrid.size() * ingredientGrid.size();
+            if (preferredIndex != null && preferredIndex >= 0 && preferredIndex < elements.size()) {
+                updateLayoutKeepingPageAnchorVisible(elements.get(preferredIndex));
+            } else {
+                updateLayout(false);
             }
-            ((IngredientGridWithNavigation) (Object) this).updateLayout(false);
         }
     }
 }
