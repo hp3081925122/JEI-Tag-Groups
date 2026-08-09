@@ -5,16 +5,16 @@ import com.jei_tag_groups.client.config.RecipeGroupManager;
 import com.jei_tag_groups.client.input.RecipeGroupKeyMappings;
 import com.mojang.logging.LogUtils;
 import mezz.jei.gui.recipes.RecipesGui;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.InputEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.InputEvent;
 import net.minecraft.client.Minecraft;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 
-@Mod.EventBusSubscriber(modid = Jei_tag_groups.MODID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = Jei_tag_groups.MODID, value = Dist.CLIENT)
 public final class RecipeGroupClientTickEvents {
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -23,10 +23,8 @@ public final class RecipeGroupClientTickEvents {
 
     @SubscribeEvent
     // 在客户端 tick 中驱动折叠配方轮播。
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase == TickEvent.Phase.END) {
-            RecipeGroupManager.tickCarousel();
-        }
+    public static void onClientTick(ClientTickEvent.Post event) {
+        RecipeGroupManager.tickCarousel();
     }
 
     @SubscribeEvent

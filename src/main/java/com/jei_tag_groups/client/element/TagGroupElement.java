@@ -10,7 +10,7 @@ import mezz.jei.api.runtime.IRecipesGui;
 import mezz.jei.common.gui.JeiTooltip;
 import mezz.jei.common.input.IInternalKeyMappings;
 import mezz.jei.gui.input.UserInput;
-import mezz.jei.gui.overlay.IngredientGridTooltipHelper;
+import mezz.jei.gui.overlay.ingredients.IngredientGridTooltipHelper;
 import mezz.jei.gui.overlay.elements.IElement;
 import mezz.jei.gui.util.FocusUtil;
 import mezz.jei.library.gui.ingredients.TagContentTooltipComponent;
@@ -27,12 +27,16 @@ public final class TagGroupElement implements IElement<ItemStack> {
     private final TagGroupConfig.GroupKey groupKey;
     private final int borderColor;
     private final List<ItemStack> memberStacks;
+    private final String displayNameKey;
+    private final List<String> tooltipKeys;
 
-    public TagGroupElement(ITypedIngredient<ItemStack> typedIngredient, TagGroupConfig.GroupKey groupKey, int borderColor, List<ItemStack> memberStacks) {
+    public TagGroupElement(ITypedIngredient<ItemStack> typedIngredient, TagGroupConfig.TagGroupDefinition definition, List<ItemStack> memberStacks) {
         this.typedIngredient = typedIngredient;
-        this.groupKey = groupKey;
-        this.borderColor = borderColor;
+        this.groupKey = definition.groupKey();
+        this.borderColor = definition.borderColor();
         this.memberStacks = List.copyOf(memberStacks);
+        this.displayNameKey = definition.displayNameKey();
+        this.tooltipKeys = List.copyOf(definition.tooltipKeys());
     }
 
     @Override
@@ -57,10 +61,21 @@ public final class TagGroupElement implements IElement<ItemStack> {
     }
 
     @Override
-    // 在原有物品提示后追加目标标识、成员数量和有限的图标预览。
+    // 在物品标识和成员数量之间显示左键操作提示，并保留成员图标预览。
     public void getTooltip(JeiTooltip tooltip, IngredientGridTooltipHelper tooltipHelper, IIngredientRenderer<ItemStack> renderer, IIngredientHelper<ItemStack> ingredientHelper) {
-        String targetKey = groupKey.type() == TagGroupConfig.TargetType.TAG ? "tag" : "item";
-        tooltip.add(Component.translatable("jei_tag_groups.tooltip." + targetKey, groupKey.id().toString()));
+        if (displayNameKey != null) {
+            tooltip.add(Component.translatable(displayNameKey));
+        }
+        for (String tooltipKey : tooltipKeys) {
+            tooltip.add(Component.translatable(tooltipKey));
+        }
+        String targetKey = switch (groupKey.type()) {
+            case TAG -> "tag";
+            case ITEM -> "item";
+            case ITEM_NAME -> "item_name";
+        };
+        tooltip.add(Component.translatable("jei_tag_groups.tooltip." + targetKey, groupKey.value()));
+        tooltip.add(Component.translatable("jei_tag_groups.tooltip.toggle_item_groups"));
         tooltip.add(Component.translatable("jei_tag_groups.tooltip.count", memberStacks.size()));
         tooltip.add(new TagContentTooltipComponent<>(renderer, memberStacks));
     }
@@ -68,6 +83,11 @@ public final class TagGroupElement implements IElement<ItemStack> {
     @Override
     public boolean isVisible() {
         return true;
+    }
+
+    @Override
+    // 聚合入口不需要维护自身动画状态。
+    public void tick() {
     }
 
     @Override

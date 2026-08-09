@@ -3,6 +3,7 @@ package com.jei_tag_groups.mixin.client;
 import com.jei_tag_groups.client.config.RecipeGroupManager;
 import mezz.jei.api.recipe.IRecipeManager;
 import mezz.jei.api.recipe.category.IRecipeCategory;
+import mezz.jei.gui.recipes.IRecipeLayoutWithButtons;
 import mezz.jei.gui.recipes.RecipeGuiLogic;
 import mezz.jei.gui.recipes.layouts.IRecipeLayoutList;
 import mezz.jei.gui.recipes.lookups.ILookupState;
@@ -14,6 +15,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+import java.util.List;
 
 @Mixin(value = RecipeGuiLogic.class, remap = false)
 public abstract class RecipeGuiLogicMixin {
@@ -44,16 +47,21 @@ public abstract class RecipeGuiLogicMixin {
     private void jeiTagGroups$invalidateRecipeLayouts(CallbackInfoReturnable<?> callback) {
         long revision = RecipeGroupManager.revision();
         if (jeiTagGroups$recipeGroupRevision != revision) {
+            int recipesPerPage = Math.max(1, state.getRecipesPerPage());
+            int previousPage = state.getRecipeIndex() / recipesPerPage;
             jeiTagGroups$recipeGroupRevision = revision;
             cachedRecipeLayoutsWithButtons = null;
             cachedRecipeCategory = null;
-            RecipeGroupManager.adjustRecipePage(state);
+            boolean pageAdjusted = RecipeGroupManager.adjustRecipePage(state);
+            if (!pageAdjusted) {
+                RecipeGroupManager.restoreRecipePage(state, previousPage);
+            }
         }
     }
 
-    @Inject(method = "createRecipeLayoutsWithButtons", at = @At("RETURN"))
+    @Inject(method = "getVisibleRecipeLayoutsWithButtons", at = @At("RETURN"))
     // 记录已完成创建的布局，供当前页面绘制边框并识别点击位置。
-    private void jeiTagGroups$registerRecipeLayouts(CallbackInfoReturnable<IRecipeLayoutList> callback) {
+    private void jeiTagGroups$registerRecipeLayouts(CallbackInfoReturnable<List<IRecipeLayoutWithButtons<?>>> callback) {
         RecipeGroupManager.registerRecipeLayouts(callback.getReturnValue());
     }
 }

@@ -1,8 +1,18 @@
 {
   "jei_tag_groups.tooltip.tag": "標籤：%s",
   "jei_tag_groups.tooltip.item": "物品：%s",
+  "jei_tag_groups.tooltip.item_name": "物品名稱包含：%s",
+  "jei_tag_groups.group.enchanted_book.name": "附魔書",
+  "jei_tag_groups.group.enchanted_book.tooltip": "已摺疊附魔書條目",
+  "jei_tag_groups.group.potion.name": "藥水",
+  "jei_tag_groups.group.potion.tooltip": "已摺疊藥水條目",
+  "jei_tag_groups.group.splash_potion.name": "噴濺藥水",
+  "jei_tag_groups.group.splash_potion.tooltip": "已摺疊噴濺藥水條目",
+  "jei_tag_groups.group.lingering_potion.name": "滯留藥水",
+  "jei_tag_groups.group.lingering_potion.tooltip": "已摺疊滯留藥水條目",
+  "jei_tag_groups.tooltip.toggle_item_groups": "左鍵展開/摺疊物品列表",
   "jei_tag_groups.tooltip.count": "成員數量：%s",
   "key.categories.jei_tag_groups": "JEI Tag Groups",
   "key.jei_tag_groups.toggle_recipe_groups": "展開/摺疊 JEI 配方組",
-  "jei_tag_groups.tooltip.toggle_recipe_groups": "懸停摺疊配方後按 %s 展開/摺疊"
+  "jei_tag_groups.tooltip.toggle_recipe_groups": "左鍵點擊摺疊配方，或按 %s 展開/摺疊"
 }
