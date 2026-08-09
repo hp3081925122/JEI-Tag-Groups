@@ -12,24 +12,25 @@ JEI Tag Groups 是一个客户端模组，需要安装 JEI。配置文件位于�
 
 在 JEI 中：
 
-- 将鼠标移动到折叠配方上，按住配置的配方组按键即可展开。
-- 再次按住同一个按键即可折叠。
-- 修改按键绑定后，JEI 提示中的按键名称会动态更新。
-- 配方轮播会定期显示折叠组中隐藏的配方。
+- 左键点击折叠的物品组，可以展开或折叠物品列表。
+- 左键点击折叠的配方，可以展开或折叠配方组。
+- 鼠标移动到折叠配方上时，按一次配置的配方组按键即可展开或折叠，默认按键是左 Shift。
+- 可以在 Minecraft 的控制菜单中修改按键，JEI 提示中的按键名称会自动动态更新。
+- 配方轮播会定期显示当前折叠组中隐藏的配方。
 
 ## 配置文件
 
-配置文件使用 UTF-8 编码的 JSON 格式。`description` 字段只用于描述规则，不会参与匹配。
+配置文件使用 UTF-8 编码的 JSON 格式。`description` 字段只用于描述规则，不会参与匹配。资源 ID 必须包含命名空间，例如 `minecraft:stone`。
 
 ### 物品规则
 
-物品规则必须在 `item` 和 `tag` 中二选一。`icon` 是折叠后显示的代表物品，`border_color` 是六位十六进制颜色。
+物品规则必须在 `tag`、`item`、`items`、`item_name_contains` 中选择一个。`icon` 是折叠后显示的代表物品，`border_color` 是 `#RRGGBB` 格式的六位十六进制颜色。
 
-匹配一个物品 ID：
+匹配一个物品 ID。`item` 为兼容旧配置保留，作用等同于只有一个元素的 `items` 数组：
 
 ```json
 {
-  "description": "折叠附魔书物品",
+  "description": "折叠一个物品",
   "type": "item",
   "item": "minecraft:enchanted_book",
   "icon": "minecraft:enchanted_book",
@@ -37,7 +38,23 @@ JEI Tag Groups 是一个客户端模组，需要安装 JEI。配置文件位于�
 }
 ```
 
-匹配一个物品标签：
+匹配多个指定物品 ID：
+
+```json
+{
+  "description": "折叠指定的药水物品",
+  "type": "item",
+  "items": [
+    "minecraft:potion",
+    "minecraft:splash_potion",
+    "minecraft:lingering_potion"
+  ],
+  "icon": "minecraft:potion",
+  "border_color": "#55AAFF"
+}
+```
+
+匹配物品标签：
 
 ```json
 {
@@ -49,7 +66,46 @@ JEI Tag Groups 是一个客户端模组，需要安装 JEI。配置文件位于�
 }
 ```
 
-同一条规则不能同时使用 `item` 和 `tag`。资源 ID 必须包含命名空间。
+根据当前语言下的物品显示名称包含文本进行匹配。匹配区分大小写：
+
+```json
+{
+  "description": "折叠所有刷怪蛋",
+  "type": "item",
+  "item_name_contains": "刷怪蛋",
+  "icon": "minecraft:pig_spawn_egg",
+  "border_color": "#FFAA55"
+}
+```
+
+切换到英文时，应将匹配文本改为英文，例如 `Spawn Egg`。
+
+### 显示名称和 Tooltip
+
+`display_name` 用于设置折叠后代表物品显示的名称。`tooltip` 用于添加一行或多行额外 Tooltip。两个字段都填写语言键，而不是直接填写显示文本。`tooltip` 可以是单个字符串，也可以是字符串数组。
+
+```json
+{
+  "description": "折叠所有刷怪蛋",
+  "type": "item",
+  "item_name_contains": "刷怪蛋",
+  "icon": "minecraft:pig_spawn_egg",
+  "display_name": "jei_tag_groups.example.spawn_eggs.name",
+  "tooltip": [
+    "jei_tag_groups.example.spawn_eggs.tooltip"
+  ],
+  "border_color": "#FFAA55"
+}
+```
+
+在已加载的 Minecraft 语言文件中定义这些语言键，例如：
+
+```json
+{
+  "jei_tag_groups.example.spawn_eggs.name": "刷怪蛋",
+  "jei_tag_groups.example.spawn_eggs.tooltip": "所有刷怪蛋条目已折叠"
+}
+```
 
 ### 配方规则
 
@@ -60,7 +116,7 @@ JEI Tag Groups 是一个客户端模组，需要安装 JEI。配置文件位于�
 - `input_item`：匹配配方中的输入物品。
 - `output_item`：匹配配方中的产出物品。
 
-同时填写多个匹配字段时，所有字段都必须匹配。物品 ID 必须包含命名空间。
+同时填写多个匹配字段时，所有字段都必须匹配。配方规则必须填写 `border_color`，不能使用 `icon`、`display_name` 或 `tooltip`。
 
 匹配配方 ID 中包含的文本：
 
@@ -85,7 +141,7 @@ JEI Tag Groups 是一个客户端模组，需要安装 JEI。配置文件位于�
 }
 ```
 
-如果要匹配完全相同的配方 ID，将 `recipe_id_contains` 替换为 `recipe_id`，例如：
+如果要匹配完全相同的配方 ID，将 `recipe_id_contains` 替换为 `recipe_id`：
 
 ```json
 {
