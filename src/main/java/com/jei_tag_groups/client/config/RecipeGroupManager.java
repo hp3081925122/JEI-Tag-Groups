@@ -45,6 +45,7 @@ public final class RecipeGroupManager {
     private static Object pendingRecipe;
     private static List<TagGroupConfig.RecipeGroupDefinition> pendingGroups = List.of();
     private static boolean pendingExpand;
+    private static boolean jeiRuntimeAvailable;
 
     private RecipeGroupManager() {
     }
@@ -78,6 +79,20 @@ public final class RecipeGroupManager {
             pendingRecipe = null;
             pendingGroups = List.of();
         }
+    }
+
+    // JEI Runtime 就绪后清除启动阶段的原始查询缓存并重新计算折叠结果。
+    public static synchronized void setJeiRuntimeAvailable(boolean available) {
+        if (jeiRuntimeAvailable == available) {
+            return;
+        }
+        jeiRuntimeAvailable = available;
+        filteredFocusedRecipes.clear();
+        groupsByLayout.clear();
+        collapsibleGroupsByCategory.clear();
+        activeLayouts = List.of();
+        hoveredLayout = null;
+        revision++;
     }
 
     public static long revision() {
@@ -131,6 +146,9 @@ public final class RecipeGroupManager {
         IRecipeCategory<T> category = source.getRecipeCategory();
         List<T> recipes = source.getRecipes();
         boolean needsLayout = definitions.stream().anyMatch(definition -> definition.inputItemId() != null || definition.outputItemId() != null);
+        if (needsLayout && !jeiRuntimeAvailable) {
+            return source;
+        }
         List<RecipeCandidate<T>> candidates = new ArrayList<>(recipes.size());
         for (T recipe : recipes) {
             Optional<IRecipeLayoutDrawable<T>> layout = Optional.empty();
