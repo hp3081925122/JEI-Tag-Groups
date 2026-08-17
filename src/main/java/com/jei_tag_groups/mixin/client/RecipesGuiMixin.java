@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.slf4j.Logger;
 
-@Mixin(value = RecipesGui.class, remap = false)
+@Mixin(value = RecipesGui.class)
 public abstract class RecipesGuiMixin {
     @Unique
     private static final Logger jeiTagGroups$logger = LogUtils.getLogger();
