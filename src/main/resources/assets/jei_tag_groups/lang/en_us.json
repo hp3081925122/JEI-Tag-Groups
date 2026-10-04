@@ -10,6 +10,8 @@
   "jei_tag_groups.group.splash_potion.tooltip": "Collapsed splash potion entries",
   "jei_tag_groups.group.lingering_potion.name": "Lingering Potions",
   "jei_tag_groups.group.lingering_potion.tooltip": "Collapsed lingering potion entries",
+  "jei_tag_groups.group.spawn_egg.name": "Spawn Eggs",
+  "jei_tag_groups.group.spawn_egg.tooltip": "Collapsed spawn egg entries",
   "jei_tag_groups.tooltip.toggle_item_groups": "Left-click to expand/collapse the item list",
   "jei_tag_groups.tooltip.count": "Members: %s",
   "key.categories.jei_tag_groups": "JEI Tag Groups",
