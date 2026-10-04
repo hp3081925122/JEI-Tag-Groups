@@ -10,6 +10,8 @@
   "jei_tag_groups.group.splash_potion.tooltip": "已摺疊噴濺藥水條目",
   "jei_tag_groups.group.lingering_potion.name": "滯留藥水",
   "jei_tag_groups.group.lingering_potion.tooltip": "已摺疊滯留藥水條目",
+  "jei_tag_groups.group.spawn_egg.name": "刷怪蛋",
+  "jei_tag_groups.group.spawn_egg.tooltip": "已摺疊刷怪蛋條目",
   "jei_tag_groups.tooltip.toggle_item_groups": "左鍵展開/摺疊物品列表",
   "jei_tag_groups.tooltip.count": "成員數量：%s",
   "key.category.jei_tag_groups.keybinds": "JEI Tag Groups",

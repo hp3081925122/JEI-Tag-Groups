@@ -36,6 +36,7 @@ public final class TagGroupConfig {
         "item_potion.json",
         "item_splash_potion.json",
         "item_lingering_potion.json",
+        "item_spawn_egg.json",
         "recipe_repair.json",
         "recipe_enchanted_book.json",
         "recipe_smithing_trim.json"
@@ -282,12 +283,14 @@ public final class TagGroupConfig {
         JsonElement itemElement = group.get("item");
         JsonElement itemsElement = group.get("items");
         JsonElement itemNameElement = group.get("item_name_contains");
+        JsonElement itemClassElement = group.get("item_class");
         int matcherCount = (tagElement == null ? 0 : 1)
             + (itemElement == null ? 0 : 1)
             + (itemsElement == null ? 0 : 1)
-            + (itemNameElement == null ? 0 : 1);
+            + (itemNameElement == null ? 0 : 1)
+            + (itemClassElement == null ? 0 : 1);
         if (matcherCount != 1 || (itemElement != null && itemsElement != null)) {
-            throw new JsonParseException("A group must define exactly one of tag, item, items or item_name_contains");
+            throw new JsonParseException("A group must define exactly one of tag, item, items, item_name_contains or item_class");
         }
 
         String displayNameKey = getOptionalString(group, "display_name");
@@ -306,7 +309,7 @@ public final class TagGroupConfig {
         if (tagElement != null) {
             String targetValue = getRequiredString(group, "tag");
             Identifier targetId = parseRequiredResourceLocation(targetValue, "tag");
-            return new TagGroupDefinition(new GroupKey(TargetType.TAG, targetId.toString()), TagKey.create(Registries.ITEM, targetId), List.of(), null, iconId, borderColor, displayNameKey, tooltipKeys);
+            return new TagGroupDefinition(new GroupKey(TargetType.TAG, targetId.toString()), TagKey.create(Registries.ITEM, targetId), List.of(), null, null, iconId, borderColor, displayNameKey, tooltipKeys);
         }
 
         if (itemNameElement != null) {
@@ -314,14 +317,30 @@ public final class TagGroupConfig {
             if (itemNameContains.isBlank()) {
                 throw new JsonParseException("The item_name_contains property must not be blank");
             }
-            return new TagGroupDefinition(new GroupKey(TargetType.ITEM_NAME, itemNameContains), null, List.of(), itemNameContains, iconId, borderColor, displayNameKey, tooltipKeys);
+            return new TagGroupDefinition(new GroupKey(TargetType.ITEM_NAME, itemNameContains), null, List.of(), itemNameContains, null, iconId, borderColor, displayNameKey, tooltipKeys);
+        }
+
+        if (itemClassElement != null) {
+            String itemClassName = getRequiredString(group, "item_class");
+            Class<?> itemClass;
+            try {
+                itemClass = Class.forName(itemClassName, false, TagGroupConfig.class.getClassLoader());
+            } catch (ClassNotFoundException | LinkageError exception) {
+                throw new JsonParseException("Unknown item class: " + itemClassName, exception);
+            }
+            if (!Item.class.isAssignableFrom(itemClass)) {
+                throw new JsonParseException("Configured class is not an item class: " + itemClassName);
+            }
+            @SuppressWarnings("unchecked")
+            Class<? extends Item> typedItemClass = (Class<? extends Item>) itemClass;
+            return new TagGroupDefinition(new GroupKey(TargetType.ITEM_CLASS, itemClassName), null, List.of(), null, typedItemClass, iconId, borderColor, displayNameKey, tooltipKeys);
         }
 
         JsonElement itemValuesElement = itemsElement == null ? itemElement : itemsElement;
         List<Identifier> itemIds = parseItemResourceLocations(itemValuesElement, itemsElement == null ? "item" : "items");
         List<Item> items = itemIds.stream().map(BuiltInRegistries.ITEM::getValue).toList();
         String groupValue = String.join(",", itemIds.stream().map(Identifier::toString).sorted().toList());
-        return new TagGroupDefinition(new GroupKey(TargetType.ITEM, groupValue), null, items, null, iconId, borderColor, displayNameKey, tooltipKeys);
+        return new TagGroupDefinition(new GroupKey(TargetType.ITEM, groupValue), null, items, null, null, iconId, borderColor, displayNameKey, tooltipKeys);
     }
 
     // 解析一个按配方 ID、产出物品或输入物品匹配的配方折叠组。
@@ -468,13 +487,14 @@ public final class TagGroupConfig {
     public enum TargetType {
         TAG,
         ITEM,
-        ITEM_NAME
+        ITEM_NAME,
+        ITEM_CLASS
     }
 
     public record GroupKey(TargetType type, String value) {
     }
 
-    public record TagGroupDefinition(GroupKey groupKey, TagKey<Item> tagKey, List<Item> items, String itemNameContains, Identifier iconId, int borderColor, String displayNameKey, List<String> tooltipKeys) {
+    public record TagGroupDefinition(GroupKey groupKey, TagKey<Item> tagKey, List<Item> items, String itemNameContains, Class<? extends Item> itemClass, Identifier iconId, int borderColor, String displayNameKey, List<String> tooltipKeys) {
         public TagGroupDefinition {
             items = List.copyOf(items);
             tooltipKeys = List.copyOf(tooltipKeys);

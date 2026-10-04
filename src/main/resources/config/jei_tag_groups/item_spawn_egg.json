@@ -1,0 +1,11 @@
+{
+  "description": "折叠刷怪蛋物品",
+  "type": "item",
+  "item_class": "net.minecraft.world.item.SpawnEggItem",
+  "icon": "minecraft:pig_spawn_egg",
+  "display_name": "jei_tag_groups.group.spawn_egg.name",
+  "tooltip": [
+    "jei_tag_groups.group.spawn_egg.tooltip"
+  ],
+  "border_color": "#55AA55"
+}

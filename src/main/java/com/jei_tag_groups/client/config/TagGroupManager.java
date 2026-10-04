@@ -97,7 +97,7 @@ public final class TagGroupManager {
             List<SourceItem> members = sourceItems.stream()
                 .filter(sourceItem -> matchesItem(definition, sourceItem.stack()))
                 .toList();
-            if (!members.isEmpty()) {
+            if (members.size() > 1) {
                 matchingGroups.add(new MatchingGroup(definition, members, expandedGroups.contains(definition.groupKey())));
             }
         }
@@ -239,6 +239,9 @@ public final class TagGroupManager {
         }
         if (definition.itemNameContains() != null) {
             return stack.getHoverName().getString().contains(definition.itemNameContains());
+        }
+        if (definition.itemClass() != null) {
+            return definition.itemClass().isInstance(stack.getItem());
         }
         return definition.items().contains(stack.getItem());
     }
