@@ -73,6 +73,7 @@ public final class TagGroupElement implements IElement<ItemStack> {
             case TAG -> "tag";
             case ITEM -> "item";
             case ITEM_NAME -> "item_name";
+            case ITEM_CLASS -> "item_class";
         };
         tooltip.add(Component.translatable("jei_tag_groups.tooltip." + targetKey, groupKey.value()));
         tooltip.add(Component.translatable("jei_tag_groups.tooltip.toggle_item_groups"));
