@@ -25,6 +25,7 @@ import java.util.stream.Stream;
 public final class TagGroupManager {
     private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
     private static volatile List<TagGroupConfig.TagGroupDefinition> definitions = List.of();
+    private static AutoItemGroupConfig.Settings autoItemSettings = AutoItemGroupConfig.Settings.disabled();
     private static final Set<TagGroupConfig.GroupKey> expandedGroups = new java.util.HashSet<>();
     private static final Map<IElement<?>, List<ExpandedGroup>> expandedMemberGroups = new IdentityHashMap<>();
     private static final Map<List<IElement<?>>, Integer> preferredIndexes = new IdentityHashMap<>();
@@ -38,8 +39,9 @@ public final class TagGroupManager {
     }
 
     // 资源重载时替换配置并清空玩家当前的展开状态。
-    public static synchronized void setDefinitions(List<TagGroupConfig.TagGroupDefinition> newDefinitions) {
+    public static synchronized void setDefinitions(List<TagGroupConfig.TagGroupDefinition> newDefinitions, AutoItemGroupConfig.Settings newAutoItemSettings) {
         definitions = List.copyOf(newDefinitions);
+        autoItemSettings = newAutoItemSettings;
         expandedGroups.clear();
         expandedMemberGroups.clear();
         preferredIndexes.clear();
@@ -76,7 +78,7 @@ public final class TagGroupManager {
             return cachedElements;
         }
         expandedMemberGroups.clear();
-        if (definitions.isEmpty()) {
+        if (definitions.isEmpty() && !autoItemSettings.enabled()) {
             cachedSource = source;
             cachedRevision = revision;
             cachedElements = source;
@@ -101,6 +103,7 @@ public final class TagGroupManager {
                 matchingGroups.add(new MatchingGroup(definition, members, expandedGroups.contains(definition.groupKey())));
             }
         }
+        addAutomaticItemGroups(sourceItems, matchingGroups);
         if (matchingGroups.isEmpty()) {
             pendingGroupKey = null;
             cachedSource = source;
@@ -216,6 +219,30 @@ public final class TagGroupManager {
         }
     }
 
+    private static void addAutomaticItemGroups(List<SourceItem> sourceItems, List<MatchingGroup> matchingGroups) {
+        if (!autoItemSettings.enabled()) {
+            return;
+        }
+        Set<IElement<?>> manualMembers = java.util.Collections.newSetFromMap(new IdentityHashMap<>());
+        for (MatchingGroup group : matchingGroups) {
+            for (SourceItem member : group.members()) {
+                manualMembers.add(member.element());
+            }
+        }
+        List<SourceItem> available = sourceItems.stream().filter(member -> !manualMembers.contains(member.element())).toList();
+        Map<String, List<SourceItem>> automaticGroups = autoItemSettings.collect(available,
+            member -> BuiltInRegistries.ITEM.getKey(member.stack().getItem()).toString());
+        for (Map.Entry<String, List<SourceItem>> entry : automaticGroups.entrySet()) {
+            SourceItem first = entry.getValue().get(0);
+            TagGroupConfig.GroupKey key = new TagGroupConfig.GroupKey(TagGroupConfig.TargetType.ITEM, entry.getKey());
+            TagGroupConfig.TagGroupDefinition definition = new TagGroupConfig.TagGroupDefinition(key, null,
+                List.of(first.stack().getItem()), null, null, BuiltInRegistries.ITEM.getKey(first.stack().getItem()),
+                0xFF55AAFF, "jei_tag_groups.group.auto_item.name", List.of());
+            matchingGroups.add(new MatchingGroup(definition, entry.getValue(), expandedGroups.contains(key)));
+        }
+        LOGGER.debug("Automatic item ID grouping: visibleEntries={}, unassignedEntries={}, groups={}", sourceItems.size(), available.size(), automaticGroups.size());
+    }
+
     private static TagGroupElement createElement(MatchingGroup group, IIngredientManager ingredientManager) {
         Item iconItem = BuiltInRegistries.ITEM.get(group.definition().iconId());
         ItemStack iconStack = iconItem == null
@@ -227,8 +254,10 @@ public final class TagGroupManager {
         }
 
         ITypedIngredient<ItemStack> typedIcon = ingredientManager.createTypedIngredient(VanillaTypes.ITEM_STACK, iconStack).orElseThrow();
-        List<ItemStack> memberStacks = group.members().stream().map(member -> member.stack().copy()).toList();
-        return new TagGroupElement(typedIcon, group.definition(), memberStacks);
+        List<ITypedIngredient<?>> memberIngredients = group.members().stream()
+            .<ITypedIngredient<?>>map(member -> member.element().getTypedIngredient())
+            .toList();
+        return new TagGroupElement(typedIcon, group.definition(), memberIngredients, ingredientManager);
     }
 
     // 按标签、物品 ID 或当前语言下的物品显示名称匹配成员。
