@@ -1,0 +1,7 @@
+{
+  "description": "同一物品 ID 的 JEI 可见条目数量严格大于 threshold 时自动折叠。统计不同数据的 JEI 条目，不是物品堆叠数量。手动分组优先；黑名单只影响自动分组。修改后按 F3+T 重载。",
+  "description_en": "Automatically collapse visible JEI entries with the same item ID when their count exceeds the threshold. Counts JEI variants, not stack size. Manual groups take priority; the blacklist only affects automatic groups. Reload with F3+T.",
+  "enabled": true,
+  "threshold": 10,
+  "blacklist": []
+}
