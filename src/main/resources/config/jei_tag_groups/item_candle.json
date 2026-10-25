@@ -1,0 +1,11 @@
+{
+  "description": "折叠蜡烛物品",
+  "type": "item",
+  "tag": "minecraft:candles",
+  "icon": "minecraft:candle",
+  "display_name": "jei_tag_groups.group.candle.name",
+  "tooltip": [
+    "jei_tag_groups.group.candle.tooltip"
+  ],
+  "border_color": "#FFCC66"
+}

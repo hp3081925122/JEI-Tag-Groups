@@ -1,0 +1,11 @@
+{
+  "description": "折叠悬挂告示牌物品",
+  "type": "item",
+  "tag": "minecraft:hanging_signs",
+  "icon": "minecraft:oak_hanging_sign",
+  "display_name": "jei_tag_groups.group.hanging_sign.name",
+  "tooltip": [
+    "jei_tag_groups.group.hanging_sign.tooltip"
+  ],
+  "border_color": "#CDA66A"
+}

@@ -1,0 +1,11 @@
+{
+  "description": "折叠盔甲纹饰模板物品",
+  "type": "item",
+  "tag": "minecraft:trim_templates",
+  "icon": "minecraft:sentry_armor_trim_smithing_template",
+  "display_name": "jei_tag_groups.group.armor_trim.name",
+  "tooltip": [
+    "jei_tag_groups.group.armor_trim.tooltip"
+  ],
+  "border_color": "#FFAA55"
+}

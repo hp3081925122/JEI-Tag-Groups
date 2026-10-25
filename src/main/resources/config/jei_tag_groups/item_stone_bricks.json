@@ -1,0 +1,11 @@
+{
+  "description": "折叠石砖物品",
+  "type": "item",
+  "tag": "minecraft:stone_bricks",
+  "icon": "minecraft:stone_bricks",
+  "display_name": "jei_tag_groups.group.stone_bricks.name",
+  "tooltip": [
+    "jei_tag_groups.group.stone_bricks.tooltip"
+  ],
+  "border_color": "#999999"
+}

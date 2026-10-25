@@ -69,6 +69,8 @@ public final class TagGroupElement implements IElement<ItemStack> {
     public void getTooltip(JeiTooltip tooltip, IngredientGridTooltipHelper tooltipHelper, IIngredientRenderer<ItemStack> renderer, IIngredientHelper<ItemStack> ingredientHelper) {
         if (displayNameKey != null) {
             tooltip.add(Component.translatable(displayNameKey));
+        } else {
+            tooltip.add(typedIngredient.getIngredient().getHoverName());
         }
         for (String tooltipKey : tooltipKeys) {
             tooltip.add(Component.translatable(tooltipKey));

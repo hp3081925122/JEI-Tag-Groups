@@ -1,0 +1,11 @@
+{
+  "description": "折叠陶片物品",
+  "type": "item",
+  "tag": "minecraft:decorated_pot_sherds",
+  "icon": "minecraft:angler_pottery_sherd",
+  "display_name": "jei_tag_groups.group.pottery_sherd.name",
+  "tooltip": [
+    "jei_tag_groups.group.pottery_sherd.tooltip"
+  ],
+  "border_color": "#D99B66"
+}

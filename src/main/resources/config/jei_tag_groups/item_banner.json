@@ -1,0 +1,11 @@
+{
+  "description": "折叠旗帜物品",
+  "type": "item",
+  "tag": "minecraft:banners",
+  "icon": "minecraft:white_banner",
+  "display_name": "jei_tag_groups.group.banner.name",
+  "tooltip": [
+    "jei_tag_groups.group.banner.tooltip"
+  ],
+  "border_color": "#FF5555"
+}
