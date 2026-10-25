@@ -1,0 +1,11 @@
+{
+  "description": "从 JEI 的纹饰锻造配方自动识别模板，兼容使用标准纹饰锻造配方的模组物品",
+  "type": "item",
+  "smithing_trim_templates": true,
+  "icon": "minecraft:sentry_armor_trim_smithing_template",
+  "display_name": "jei_tag_groups.group.armor_trim.name",
+  "tooltip": [
+    "jei_tag_groups.group.armor_trim.tooltip"
+  ],
+  "border_color": "#FFAA55"
+}

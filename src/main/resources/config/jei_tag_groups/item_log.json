@@ -1,0 +1,11 @@
+{
+  "description": "折叠原木物品",
+  "type": "item",
+  "tag": "minecraft:logs",
+  "icon": "minecraft:oak_log",
+  "display_name": "jei_tag_groups.group.log.name",
+  "tooltip": [
+    "jei_tag_groups.group.log.tooltip"
+  ],
+  "border_color": "#88BB77"
+}

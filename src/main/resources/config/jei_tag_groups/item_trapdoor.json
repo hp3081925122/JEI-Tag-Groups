@@ -1,0 +1,11 @@
+{
+  "description": "折叠活板门物品",
+  "type": "item",
+  "tag": "minecraft:trapdoors",
+  "icon": "minecraft:oak_trapdoor",
+  "display_name": "jei_tag_groups.group.trapdoor.name",
+  "tooltip": [
+    "jei_tag_groups.group.trapdoor.tooltip"
+  ],
+  "border_color": "#88BB77"
+}

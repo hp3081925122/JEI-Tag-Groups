@@ -2,6 +2,8 @@ package com.jei_tag_groups.client.config;
 
 import com.jei_tag_groups.client.element.TagGroupElement;
 import mezz.jei.api.constants.VanillaTypes;
+import mezz.jei.api.constants.RecipeTypes;
+import mezz.jei.api.recipe.IRecipeManager;
 import mezz.jei.api.ingredients.ITypedIngredient;
 import mezz.jei.api.runtime.IIngredientManager;
 import mezz.jei.common.util.ImmutableRect2i;
@@ -12,6 +14,8 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.crafting.SmithingTrimRecipe;
+import java.util.stream.Collectors;
 
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
@@ -34,6 +38,8 @@ public final class TagGroupManager {
     private static long cachedRevision = -1L;
     private static List<IElement<?>> cachedElements = List.of();
     private static TagGroupConfig.GroupKey pendingGroupKey;
+    private static IRecipeManager smithingRecipeManager;
+    private static Set<Item> smithingTrimTemplates;
 
     private TagGroupManager() {
     }
@@ -41,6 +47,7 @@ public final class TagGroupManager {
     // 资源重载时替换配置并清空玩家当前的展开状态。
     public static synchronized void setDefinitions(List<TagGroupConfig.TagGroupDefinition> newDefinitions, AutoItemGroupConfig.Settings newAutoItemSettings) {
         definitions = List.copyOf(newDefinitions);
+        smithingTrimTemplates = null;
         autoItemSettings = newAutoItemSettings;
         expandedGroups.clear();
         expandedMemberGroups.clear();
@@ -50,6 +57,29 @@ public final class TagGroupManager {
         cachedElements = List.of();
         cachedRevision = -1L;
         REVISION.incrementAndGet();
+    }
+
+    public static synchronized void setSmithingRecipeManager(IRecipeManager manager) {
+        smithingRecipeManager = manager;
+        smithingTrimTemplates = null;
+        cachedSource = null;
+        cachedElements = List.of();
+        cachedRevision = -1L;
+        REVISION.incrementAndGet();
+    }
+
+    private static void loadSmithingTrimTemplates() {
+        if (smithingTrimTemplates != null || smithingRecipeManager == null) {
+            return;
+        }
+        smithingTrimTemplates = smithingRecipeManager.createRecipeLookup(RecipeTypes.SMITHING).includeHidden().get()
+            .map(holder -> holder.value())
+            .filter(recipe -> recipe instanceof SmithingTrimRecipe)
+            .flatMap(recipe -> recipe.templateIngredient().stream())
+            .flatMap(ingredient -> ingredient.items())
+            .map(holder -> holder.value())
+            .collect(Collectors.toUnmodifiableSet());
+        LOGGER.info("Loaded armor trim template items from JEI smithing recipes: count={}", smithingTrimTemplates.size());
     }
 
     public static synchronized void toggle(TagGroupConfig.GroupKey groupKey) {
@@ -85,6 +115,9 @@ public final class TagGroupManager {
             return source;
         }
 
+        if (definitions.stream().anyMatch(definition -> definition.groupKey().type() == TagGroupConfig.TargetType.SMITHING_TRIM_TEMPLATE)) {
+            loadSmithingTrimTemplates();
+        }
         List<SourceItem> sourceItems = new ArrayList<>();
         for (int index = 0; index < source.size(); index++) {
             IElement<?> element = source.get(index);
@@ -263,6 +296,9 @@ public final class TagGroupManager {
 
     // 按标签、物品 ID 或当前语言下的物品显示名称匹配成员。
     private static boolean matchesItem(TagGroupConfig.TagGroupDefinition definition, ItemStack stack) {
+        if (definition.groupKey().type() == TagGroupConfig.TargetType.SMITHING_TRIM_TEMPLATE) {
+            return smithingTrimTemplates != null && smithingTrimTemplates.contains(stack.getItem());
+        }
         if (definition.tagKey() != null) {
             return stack.is(definition.tagKey());
         }

@@ -1,0 +1,11 @@
+{
+  "description": "折叠告示牌物品",
+  "type": "item",
+  "tag": "minecraft:signs",
+  "icon": "minecraft:oak_sign",
+  "display_name": "jei_tag_groups.group.sign.name",
+  "tooltip": [
+    "jei_tag_groups.group.sign.tooltip"
+  ],
+  "border_color": "#88BB77"
+}

@@ -36,6 +36,7 @@ public final class RecipeGroupManager {
     private static final Map<IRecipeCategory<?>, Set<TagGroupConfig.RecipeGroupDefinition>> collapsibleGroupsByCategory = new IdentityHashMap<>();
     private static List<IRecipeLayoutWithButtons<?>> activeLayouts = List.of();
     private static IRecipeManager recipeManager;
+    private static boolean runtimeAvailable;
     private static final Set<TagGroupConfig.RecipeGroupDefinition> expandedGroups = new LinkedHashSet<>();
     private static int carouselTicks;
     private static int carouselOffset;
@@ -84,6 +85,12 @@ public final class RecipeGroupManager {
         return revision;
     }
 
+    public static synchronized void setRuntimeAvailable(boolean available) {
+        runtimeAvailable = available;
+        setDefinitions(definitions);
+        LOGGER.debug("JEI recipe group runtime availability changed: available={}, revision={}", available, revision);
+    }
+
     // 定时切换折叠组当前显示的代表配方，并让 JEI 重新创建当前页布局。
     public static synchronized void tickCarousel() {
         if (definitions.isEmpty() || collapsibleGroupsByCategory.values().stream().allMatch(Set::isEmpty)) {
@@ -105,6 +112,11 @@ public final class RecipeGroupManager {
     // 按当前折叠状态返回供 JEI 分页使用的配方集合。
     public static synchronized <T> IFocusedRecipes<T> filterFocusedRecipes(IFocusedRecipes<T> source, IRecipeManager manager, IFocusGroup focuses) {
         if (definitions.isEmpty()) {
+            return source;
+        }
+
+        if (!runtimeAvailable) {
+            LOGGER.debug("Recipe group filtering deferred until the JEI runtime is available");
             return source;
         }
 

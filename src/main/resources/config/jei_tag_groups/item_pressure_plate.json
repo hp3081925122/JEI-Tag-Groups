@@ -1,0 +1,11 @@
+{
+  "description": "折叠木制压力板物品",
+  "type": "item",
+  "tag": "minecraft:wooden_pressure_plates",
+  "icon": "minecraft:oak_pressure_plate",
+  "display_name": "jei_tag_groups.group.pressure_plate.name",
+  "tooltip": [
+    "jei_tag_groups.group.pressure_plate.tooltip"
+  ],
+  "border_color": "#88BB77"
+}

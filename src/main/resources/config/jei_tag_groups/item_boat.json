@@ -1,0 +1,11 @@
+{
+  "description": "折叠船物品",
+  "type": "item",
+  "tag": "minecraft:boats",
+  "icon": "minecraft:oak_boat",
+  "display_name": "jei_tag_groups.group.boat.name",
+  "tooltip": [
+    "jei_tag_groups.group.boat.tooltip"
+  ],
+  "border_color": "#88BB77"
+}
