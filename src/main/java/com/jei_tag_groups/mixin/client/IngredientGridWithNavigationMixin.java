@@ -1,7 +1,9 @@
 package com.jei_tag_groups.mixin.client;
 
+import com.jei_tag_groups.client.IngredientGridLayoutRefresher;
 import com.jei_tag_groups.client.config.TagGroupManager;
 import mezz.jei.gui.overlay.ingredients.IngredientGridWithNavigation;
+import mezz.jei.gui.overlay.ingredients.IngredientGridWithNavigationController;
 import mezz.jei.gui.overlay.ingredients.IIngredientGridSource;
 import mezz.jei.gui.overlay.elements.IElement;
 import net.minecraft.client.Minecraft;
@@ -23,7 +25,8 @@ public abstract class IngredientGridWithNavigationMixin {
     private IIngredientGridSource ingredientSource;
 
     @Shadow
-    public abstract void updateLayout(boolean keepPage);
+    @Final
+    private IngredientGridWithNavigationController controller;
 
     @Shadow
     public abstract void updateLayoutKeepingPageAnchorVisible(IElement<?> element);
@@ -31,7 +34,7 @@ public abstract class IngredientGridWithNavigationMixin {
     @Unique
     private long jeiTagGroups$lastRevision = -1L;
 
-    @Inject(method = "draw", at = @At("HEAD"))
+    @Inject(method = "drawForeground", at = @At("HEAD"))
     // 配置或展开状态变化后，在下一帧重建网格并定位到新列表中的对应页面。
     private void jeiTagGroups$refreshLayout(Minecraft minecraft, GuiGraphics graphics, int mouseX, int mouseY, float partialTick, CallbackInfo callback) {
         long revision = TagGroupManager.revision();
@@ -42,7 +45,7 @@ public abstract class IngredientGridWithNavigationMixin {
             if (preferredIndex != null && preferredIndex >= 0 && preferredIndex < elements.size()) {
                 updateLayoutKeepingPageAnchorVisible(elements.get(preferredIndex));
             } else {
-                updateLayout(false);
+                ((IngredientGridLayoutRefresher) controller).jeiTagGroups$updateLayoutKeepingFirstIndex();
             }
         }
     }

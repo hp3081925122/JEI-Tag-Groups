@@ -274,25 +274,25 @@ public final class RecipeGroupManager {
         }
     }
 
-    // 根据点击坐标确认当前配方卡片确实属于折叠组后执行左键切换。
-    public static synchronized boolean toggleRecipeGroupAt(double mouseX, double mouseY, int button) {
-        if (button != 0) {
-            return false;
-        }
-        IRecipeLayoutDrawable<?> clickedLayout = null;
+    // 根据点击坐标找到当前页中属于折叠组的配方卡片，没有则返回 null。
+    public static synchronized IRecipeLayoutDrawable<?> findCollapsibleLayoutAt(double mouseX, double mouseY) {
         for (IRecipeLayoutWithButtons<?> layoutWithButtons : activeLayouts) {
             IRecipeLayoutDrawable<?> layout = layoutWithButtons.getRecipeLayout();
             if (layout.isMouseOver(mouseX, mouseY)) {
-                clickedLayout = layout;
-                break;
+                return groupsByLayout.getOrDefault(layout, List.of()).isEmpty() ? null : layout;
             }
         }
-        if (clickedLayout == null || groupsByLayout.getOrDefault(clickedLayout, List.of()).isEmpty()) {
-            return false;
+        return null;
+    }
+
+    // 松开左键时再次确认卡片仍属于折叠组，然后执行切换。
+    public static synchronized void toggleRecipeGroup(IRecipeLayoutDrawable<?> layout) {
+        if (groupsByLayout.getOrDefault(layout, List.of()).isEmpty()) {
+            LOGGER.debug("Recipe group click ignored: layout is no longer collapsible");
+            return;
         }
-        hoveredLayout = clickedLayout;
+        hoveredLayout = layout;
         toggleHoveredRecipeGroup();
-        return true;
     }
 
     // 切换鼠标悬停配方对应的折叠组，并保持 JEI 当前页码不变。

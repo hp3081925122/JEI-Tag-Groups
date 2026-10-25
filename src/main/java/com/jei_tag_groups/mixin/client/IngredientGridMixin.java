@@ -20,7 +20,7 @@ public abstract class IngredientGridMixin {
 
     @Inject(method = "drawContents", at = @At(value = "INVOKE", target = "Lmezz/jei/gui/overlay/ingredients/IngredientListRenderer;render(Lnet/minecraft/client/gui/GuiGraphics;)V", shift = At.Shift.AFTER))
     // 在物品绘制完成后追加展开组的连续外轮廓。
-    private void jeiTagGroups$drawExpandedBorders(Minecraft minecraft, GuiGraphics graphics, int mouseX, int mouseY, CallbackInfo callback) {
+    private void jeiTagGroups$drawExpandedBorders(Minecraft minecraft, GuiGraphics graphics, int mouseX, int mouseY, boolean drawSlotBackgrounds, CallbackInfo callback) {
         TagGroupManager.drawExpandedGroupBorders(graphics, ingredientListRenderer.getSlots());
     }
 }

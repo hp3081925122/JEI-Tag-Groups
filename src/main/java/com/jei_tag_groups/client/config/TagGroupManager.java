@@ -227,8 +227,10 @@ public final class TagGroupManager {
         }
 
         ITypedIngredient<ItemStack> typedIcon = ingredientManager.createTypedIngredient(VanillaTypes.ITEM_STACK, iconStack).orElseThrow();
-        List<ItemStack> memberStacks = group.members().stream().map(member -> member.stack().copy()).toList();
-        return new TagGroupElement(typedIcon, group.definition(), memberStacks);
+        List<ITypedIngredient<?>> memberIngredients = group.members().stream()
+            .<ITypedIngredient<?>>map(member -> member.element().getTypedIngredient())
+            .toList();
+        return new TagGroupElement(typedIcon, group.definition(), memberIngredients, ingredientManager);
     }
 
     // 按标签、物品 ID 或当前语言下的物品显示名称匹配成员。

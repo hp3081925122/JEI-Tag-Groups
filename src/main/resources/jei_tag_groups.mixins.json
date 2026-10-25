@@ -9,6 +9,7 @@
     "client.IngredientFilterMixin",
     "client.IngredientGridMixin",
     "client.IngredientGridWithNavigationMixin",
+    "client.IngredientGridWithNavigationControllerMixin",
     "client.IngredientLookupStateMixin",
     "client.SingleCategoryLookupStateMixin",
     "client.RecipeGuiLogicMixin",
