@@ -1,0 +1,11 @@
+{
+  "description": "折叠台阶物品",
+  "type": "item",
+  "tag": "minecraft:slabs",
+  "icon": "minecraft:oak_slab",
+  "display_name": "jei_tag_groups.group.slab.name",
+  "tooltip": [
+    "jei_tag_groups.group.slab.tooltip"
+  ],
+  "border_color": "#CCAA77"
+}

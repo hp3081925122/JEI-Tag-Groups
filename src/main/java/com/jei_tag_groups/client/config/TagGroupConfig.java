@@ -41,13 +41,36 @@ public final class TagGroupConfig {
         "recipe_enchanted_book.json",
         "recipe_smithing_trim.json"
     );
+    private static final List<String> ITEM_FAMILY_CONFIG_FILES = List.of(
+        "item_candle.json",
+        "item_banner.json",
+        "item_music_disc.json",
+        "item_pottery_sherd.json",
+        "item_armor_trim.json",
+        "item_log.json",
+        "item_plank.json",
+        "item_fence.json",
+        "item_fence_gate.json",
+        "item_stairs.json",
+        "item_slab.json",
+        "item_wall.json",
+        "item_door.json",
+        "item_trapdoor.json",
+        "item_button.json",
+        "item_pressure_plate.json",
+        "item_sign.json",
+        "item_hanging_sign.json",
+        "item_boat.json",
+        "item_stone_bricks.json"
+    );
 
     private TagGroupConfig() {
     }
 
     // 读取配置目录中的所有 JSON 文件，并让单个坏文件或坏规则不影响其他规则继续加载。
-    public static Configuration load() {
+    public static synchronized Configuration load() {
         Path directory = Minecraft.getInstance().gameDirectory.toPath().resolve(CONFIG_DIRECTORY);
+        LOGGER.debug("Loading tag group configurations: directory={}, thread={}", directory, Thread.currentThread().getName());
         initializeDefaultConfigs(directory);
 
         List<TagGroupDefinition> definitions = new ArrayList<>();
@@ -81,38 +104,54 @@ public final class TagGroupConfig {
     // 首次创建配置目录时复制默认规则，升级旧配置时先拆分旧文件；之后删除某个规则文件不会被自动恢复。
     private static void initializeDefaultConfigs(Path directory) {
         Path marker = directory.resolve(DEFAULT_CONFIG_INITIALIZED_MARKER);
-        if (Files.exists(marker)) {
-            return;
-        }
-
-        boolean success = true;
         try {
             Files.createDirectories(directory);
-            Path legacyPath = directory.resolve("tag_groups.json");
-            if (Files.exists(legacyPath)) {
-                success = migrateLegacyConfig(legacyPath, directory);
+            Set<String> initializedFiles = new LinkedHashSet<>();
+            boolean changed = Files.notExists(marker);
+            if (Files.exists(marker)) {
+                initializedFiles.addAll(Files.readAllLines(marker, StandardCharsets.UTF_8));
+                initializedFiles.removeIf(String::isBlank);
+                if (initializedFiles.isEmpty() || initializedFiles.remove("initialized")) {
+                    initializedFiles.addAll(DEFAULT_CONFIG_FILES);
+                    changed = true;
+                }
             } else {
-                for (String fileName : DEFAULT_CONFIG_FILES) {
-                    Path target = directory.resolve(fileName);
-                    if (Files.exists(target)) {
-                        continue;
+                Path legacyPath = directory.resolve("tag_groups.json");
+                if (Files.exists(legacyPath)) {
+                    if (!migrateLegacyConfig(legacyPath, directory)) {
+                        return;
                     }
-                    try (InputStream input = TagGroupConfig.class.getResourceAsStream(DEFAULT_CONFIG_RESOURCE_PREFIX + fileName)) {
-                        if (input == null) {
-                            success = false;
-                            LOGGER.warn("Default tag group configuration resource is missing: {}", fileName);
-                            continue;
-                        }
-                        Files.copy(input, target);
-                    } catch (IOException exception) {
-                        success = false;
-                        LOGGER.warn("Failed to copy default tag group configuration: {}", target, exception);
-                    }
+                    initializedFiles.addAll(DEFAULT_CONFIG_FILES);
                 }
             }
-            if (success) {
-                Files.writeString(marker, "initialized\n", StandardCharsets.UTF_8);
-                LOGGER.info("Created default tag group configuration files in: {}", directory);
+
+            List<String> bundledFiles = new ArrayList<>(DEFAULT_CONFIG_FILES);
+            bundledFiles.addAll(ITEM_FAMILY_CONFIG_FILES);
+            int addedFiles = 0;
+            for (String fileName : bundledFiles) {
+                if (initializedFiles.contains(fileName)) {
+                    continue;
+                }
+                Path target = directory.resolve(fileName);
+                try {
+                    if (Files.notExists(target)) {
+                        try (InputStream input = TagGroupConfig.class.getResourceAsStream(DEFAULT_CONFIG_RESOURCE_PREFIX + fileName)) {
+                            if (input == null) {
+                                throw new IOException("Missing bundled configuration: " + fileName);
+                            }
+                            Files.copy(input, target);
+                            addedFiles++;
+                        }
+                    }
+                    initializedFiles.add(fileName);
+                    changed = true;
+                } catch (IOException exception) {
+                    LOGGER.warn("Failed to install default tag group configuration: {}", target, exception);
+                }
+            }
+            if (changed) {
+                Files.writeString(marker, String.join("\n", initializedFiles) + "\n", StandardCharsets.UTF_8);
+                LOGGER.info("Updated default tag group configurations: directory={}, addedFiles={}", directory, addedFiles);
             }
         } catch (IOException exception) {
             LOGGER.warn("Failed to initialize default tag group configuration directory: {}", directory, exception);

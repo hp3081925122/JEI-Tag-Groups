@@ -1,0 +1,11 @@
+{
+  "description": "折叠唱片物品",
+  "type": "item",
+  "tag": "minecraft:music_discs",
+  "icon": "minecraft:music_disc_13",
+  "display_name": "jei_tag_groups.group.music_disc.name",
+  "tooltip": [
+    "jei_tag_groups.group.music_disc.tooltip"
+  ],
+  "border_color": "#55FFFF"
+}

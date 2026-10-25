@@ -1,0 +1,11 @@
+{
+  "description": "折叠按钮物品",
+  "type": "item",
+  "tag": "minecraft:buttons",
+  "icon": "minecraft:oak_button",
+  "display_name": "jei_tag_groups.group.button.name",
+  "tooltip": [
+    "jei_tag_groups.group.button.tooltip"
+  ],
+  "border_color": "#BB9955"
+}

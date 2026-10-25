@@ -1,0 +1,11 @@
+{
+  "description": "折叠门物品",
+  "type": "item",
+  "tag": "minecraft:doors",
+  "icon": "minecraft:oak_door",
+  "display_name": "jei_tag_groups.group.door.name",
+  "tooltip": [
+    "jei_tag_groups.group.door.tooltip"
+  ],
+  "border_color": "#BB9955"
+}

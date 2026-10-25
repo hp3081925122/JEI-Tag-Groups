@@ -1,0 +1,11 @@
+{
+  "description": "折叠木板物品",
+  "type": "item",
+  "tag": "minecraft:planks",
+  "icon": "minecraft:oak_planks",
+  "display_name": "jei_tag_groups.group.plank.name",
+  "tooltip": [
+    "jei_tag_groups.group.plank.tooltip"
+  ],
+  "border_color": "#DDBB77"
+}
