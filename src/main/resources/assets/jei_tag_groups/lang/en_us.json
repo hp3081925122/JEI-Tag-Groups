@@ -1,4 +1,5 @@
 {
+  "jei_tag_groups.group.auto_item.name": "Item Variants",
   "jei_tag_groups.tooltip.tag": "Tag: %s",
   "jei_tag_groups.tooltip.item": "Item(s): %s",
   "jei_tag_groups.tooltip.item_name": "Item name contains: %s",

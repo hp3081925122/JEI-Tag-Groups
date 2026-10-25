@@ -25,7 +25,7 @@ public final class TagGroupClientEvents {
     public static void onClientSetup(FMLClientSetupEvent event) {
         event.enqueueWork(() -> {
             TagGroupConfig.Configuration configuration = TagGroupConfig.load();
-            TagGroupManager.setDefinitions(configuration.tagGroups());
+            TagGroupManager.setDefinitions(configuration.tagGroups(), configuration.autoItemGroups());
             RecipeGroupManager.setDefinitions(configuration.recipeGroups());
         });
     }
@@ -47,7 +47,7 @@ public final class TagGroupClientEvents {
 
             @Override
             protected void apply(TagGroupConfig.Configuration configuration, net.minecraft.server.packs.resources.ResourceManager resourceManager, net.minecraft.util.profiling.ProfilerFiller profiler) {
-                TagGroupManager.setDefinitions(configuration.tagGroups());
+                TagGroupManager.setDefinitions(configuration.tagGroups(), configuration.autoItemGroups());
                 RecipeGroupManager.setDefinitions(configuration.recipeGroups());
             }
         });

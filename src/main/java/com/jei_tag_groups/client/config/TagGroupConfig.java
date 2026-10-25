@@ -75,7 +75,7 @@ public final class TagGroupConfig {
                 LOGGER.warn("Failed to load tag group configuration file: {}", path, exception);
             }
         }
-        return new Configuration(List.copyOf(definitions), List.copyOf(recipeDefinitions));
+        return new Configuration(List.copyOf(definitions), List.copyOf(recipeDefinitions), AutoItemGroupConfig.load());
     }
 
     // 首次创建配置目录时复制默认规则，升级旧配置时先拆分旧文件；之后删除某个规则文件不会被自动恢复。
@@ -189,6 +189,7 @@ public final class TagGroupConfig {
         try (var paths = Files.list(directory)) {
             return paths
                 .filter(path -> Files.isRegularFile(path) && path.getFileName().toString().endsWith(".json"))
+                .filter(path -> !path.getFileName().toString().equals(AutoItemGroupConfig.FILE_NAME))
                 .sorted()
                 .toList();
         } catch (IOException exception) {
@@ -268,7 +269,7 @@ public final class TagGroupConfig {
                 throw new JsonParseException("A configuration file must define a group or recipe group");
             }
             LOGGER.debug("Loaded tag group configuration file: file={}, description={}", path, description == null ? "none" : description);
-            return new Configuration(List.copyOf(definitions), List.copyOf(recipeDefinitions));
+            return new Configuration(List.copyOf(definitions), List.copyOf(recipeDefinitions), AutoItemGroupConfig.Settings.disabled());
         }
     }
 
@@ -502,7 +503,7 @@ public final class TagGroupConfig {
     }
 
     // 保存物品组和配方组两类配置，资源重载时一次性替换。
-    public record Configuration(List<TagGroupDefinition> tagGroups, List<RecipeGroupDefinition> recipeGroups) {
+    public record Configuration(List<TagGroupDefinition> tagGroups, List<RecipeGroupDefinition> recipeGroups, AutoItemGroupConfig.Settings autoItemGroups) {
     }
 
     // 保存配方折叠组的精确 ID、ID 包含文本、物品条件和边框颜色。
